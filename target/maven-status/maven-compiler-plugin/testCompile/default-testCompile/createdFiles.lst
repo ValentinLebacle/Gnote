@@ -1,1 +1,6 @@
-com\saintsau\slam2\gnotes30\ApplicationTests.class
+com/saintsau/slam2/gnotes30/service/EtudiantServiceTests.class
+com/saintsau/slam2/gnotes30/MatiereTest.class
+com/saintsau/slam2/gnotes30/EtudiantTest.class
+com/saintsau/slam2/gnotes30/controller/EtudiantControllerTests.class
+com/saintsau/slam2/gnotes30/ApplicationTests.class
+com/saintsau/slam2/gnotes30/exception/EtudiantNotFoundExceptionTest.class
