@@ -1,0 +1,120 @@
+package org.openjfx.sio2E4.controller;
+
+import javafx.collections.FXCollections;
+import javafx.fxml.FXML;
+import javafx.scene.control.*;
+import javafx.stage.Stage;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+
+public class EnseignantController {
+
+    @FXML
+    private TextField nomField;
+
+    @FXML
+    private TextField emailField;
+
+    @FXML
+    private TextField specialiteField;
+
+    @FXML
+    private PasswordField passwordField;
+
+    @FXML
+    private ComboBox<String> roleComboBox;
+
+    @FXML
+    private Button creerButton;
+
+    @FXML
+    private Button logoutButton; // Bouton de déconnexion ajouté
+
+    @FXML
+    private void initialize() {
+        // Ajoute les rôles dans la liste déroulante
+        roleComboBox.setItems(FXCollections.observableArrayList("Enseignant", "Admin"));
+        roleComboBox.setValue("Enseignant"); // Valeur par défaut
+    }
+
+    @FXML
+    private void handleCreerEnseignant() {
+        String nom = nomField.getText();
+        String email = emailField.getText();
+        String specialite = specialiteField.getText();
+        String password = passwordField.getText();
+        String role = roleComboBox.getValue();
+
+        if (nom.isEmpty() || email.isEmpty() || specialite.isEmpty() || password.isEmpty()) {
+            showAlert("Erreur", "Tous les champs doivent être remplis.");
+            return;
+        }
+
+        int roleId = role.equals("Admin") ? 3 : 2; // Mapping vers role_id
+
+        try (Connection connection = DatabaseConfig.getConnection()) {
+            String sql = "INSERT INTO Enseignants (nom, email, specialite, mot_de_passe, role_id) VALUES (?, ?, ?, ?, ?)";
+            PreparedStatement statement = connection.prepareStatement(sql);
+
+            statement.setString(1, nom);
+            statement.setString(2, email);
+            statement.setString(3, specialite);
+            statement.setString(4, password);
+            statement.setInt(5, roleId);
+
+            statement.executeUpdate();
+            showAlert("Succès", "Enseignant ajouté avec succès !");
+            
+            // Fermer la fenêtre après ajout
+            Stage stage = (Stage) creerButton.getScene().getWindow();
+            stage.close();
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+            showAlert("Erreur", "Impossible d'ajouter l'enseignant.");
+        }
+    }
+
+    // Méthode de déconnexion
+    @FXML
+    private void handleLogout() {
+        // Ici, tu peux ajouter le code de déconnexion
+        System.out.println("Déconnexion effectuée");
+
+        // Fermer la fenêtre actuelle
+        Stage stage = (Stage) logoutButton.getScene().getWindow();
+        stage.close();
+
+        // Rediriger vers la fenêtre de connexion si nécessaire
+        // Exemple :
+        // Parent root = FXMLLoader.load(getClass().getResource("Login.fxml"));
+        // Stage newStage = new Stage();
+        // newStage.setScene(new Scene(root));
+        // newStage.show();
+    }
+
+    private void showAlert(String title, String message) {
+        Alert alert = new Alert(Alert.AlertType.INFORMATION);
+        alert.setTitle(title);
+        alert.setHeaderText(null);
+        alert.setContentText(message);
+        alert.showAndWait();
+    }
+    @FXML
+    private void handleRetour() {
+        // Code pour gérer le retour ici (fermeture de la fenêtre ou redirection vers une autre page)
+        System.out.println("Retour actionné");
+
+        // Exemple pour fermer la fenêtre actuelle
+        Stage stage = (Stage) logoutButton.getScene().getWindow();  // Utiliser n'importe quel composant pour obtenir la scène
+        stage.close();
+
+        // Si tu veux rediriger vers une autre page, voici un exemple :
+        // Parent root = FXMLLoader.load(getClass().getResource("PagePrecedente.fxml"));
+        // Stage newStage = new Stage();
+        // newStage.setScene(new Scene(root));
+        // newStage.show();
+    }
+
+}

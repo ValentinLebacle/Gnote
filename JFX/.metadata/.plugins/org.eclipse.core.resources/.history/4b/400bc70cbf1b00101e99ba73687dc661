@@ -1,0 +1,188 @@
+package org.openjfx.sio2E4.controller;
+
+import javafx.fxml.FXML;
+import javafx.scene.control.ComboBox;
+import javafx.scene.control.TextField;
+import javafx.scene.control.DatePicker;
+import javafx.scene.control.Button;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
+import org.openjfx.sio2E4.Evaluation;
+import java.sql.*;
+import javafx.scene.control.Alert;
+import javafx.scene.control.Alert.AlertType;
+
+public class EvaluationPopupController {
+
+    @FXML
+    private ComboBox<String> etudiantComboBox;
+
+    @FXML
+    private ComboBox<String> matiereComboBox;
+
+    @FXML
+    private ComboBox<String> enseignantComboBox;  // Nouvelle ComboBox pour les enseignants
+
+    @FXML
+    private TextField noteField;
+
+    @FXML
+    private TextField coefField;  // Champ pour le coefficient
+
+    @FXML
+    private TextField commentaireField;
+
+    @FXML
+    private DatePicker dateEvaluationField;
+
+    @FXML
+    private Button submitButton;
+
+    @FXML
+    private Button closeButton;
+
+    private ObservableList<String> etudiantsList = FXCollections.observableArrayList();
+    private ObservableList<String> matieresList = FXCollections.observableArrayList();
+    private ObservableList<String> enseignantsList = FXCollections.observableArrayList();  // Liste des enseignants
+
+    // Méthode pour remplir les ComboBox avec les étudiants, matières et enseignants depuis la base de données
+    @FXML
+    private void initialize() {
+        loadEtudiants();
+        loadMatieres();
+        loadEnseignants();  // Charger les enseignants
+    }
+
+    private void loadEtudiants() {
+        String query = "SELECT nom FROM etudiants";
+        try (Connection connection = DatabaseConfig.getConnection();
+             Statement statement = connection.createStatement();
+             ResultSet resultSet = statement.executeQuery(query)) {
+
+            while (resultSet.next()) {
+                etudiantsList.add(resultSet.getString("nom"));
+            }
+            etudiantComboBox.setItems(etudiantsList);
+        } catch (SQLException e) {
+            e.printStackTrace();
+            showError("Erreur", "Impossible de charger les étudiants.");
+        }
+    }
+
+    private void loadMatieres() {
+        String query = "SELECT nom FROM matieres";
+        try (Connection connection = DatabaseConfig.getConnection();
+             Statement statement = connection.createStatement();
+             ResultSet resultSet = statement.executeQuery(query)) {
+
+            while (resultSet.next()) {
+                matieresList.add(resultSet.getString("nom"));
+            }
+            matiereComboBox.setItems(matieresList);
+        } catch (SQLException e) {
+            e.printStackTrace();
+            showError("Erreur", "Impossible de charger les matières.");
+        }
+    }
+
+    private void loadEnseignants() {
+        String query = "SELECT nom FROM enseignants";  // On récupère seulement le 'nom'
+        try (Connection connection = DatabaseConfig.getConnection();
+             Statement statement = connection.createStatement();
+             ResultSet resultSet = statement.executeQuery(query)) {
+
+            while (resultSet.next()) {
+                enseignantsList.add(resultSet.getString("nom"));  // Ajouter le nom de l'enseignant
+            }
+            enseignantComboBox.setItems(enseignantsList);  // Mettre à jour la ComboBox
+        } catch (SQLException e) {
+            e.printStackTrace();
+            showError("Erreur", "Impossible de charger les enseignants.");
+        }
+    }
+
+
+    /**
+     * Gérer l'ajout de l'évaluation à la base de données
+     */
+    @FXML
+    private void handleAjouterEvaluation() {
+        String note = noteField.getText();
+        String coef = coefField.getText();  // Récupérer le coefficient
+        String commentaire = commentaireField.getText();
+        String dateEvaluation = dateEvaluationField.getValue().toString();
+        String etudiantNom = etudiantComboBox.getValue();
+        String matiereNom = matiereComboBox.getValue();
+        String enseignantNom = enseignantComboBox.getValue();  // Récupérer l'enseignant sélectionné
+
+        // Récupérer l'ID de l'étudiant, de la matière et de l'enseignant
+        int etudiantId = getIdFromNom("etudiants", etudiantNom);
+        int matiereId = getIdFromNom("matieres", matiereNom);
+        int enseignantId = getIdFromNom("enseignants", enseignantNom);  // Récupérer l'ID de l'enseignant
+
+        if (etudiantId != -1 && matiereId != -1 && enseignantId != -1) {
+            try (Connection connection = DatabaseConfig.getConnection()) {
+                // Insertion dans la table evaluations (ajouter l'enseignant_id)
+                String query = "INSERT INTO evaluations (etudiant_id, matiere_id, enseignant_id, note, coef, date_evaluation, commentaire) VALUES (?, ?, ?, ?, ?, ?, ?)";
+                PreparedStatement preparedStatement = connection.prepareStatement(query);
+                preparedStatement.setInt(1, etudiantId);
+                preparedStatement.setInt(2, matiereId);
+                preparedStatement.setInt(3, enseignantId);  // Ajouter l'enseignant_id
+                preparedStatement.setDouble(4, Double.parseDouble(note));
+                preparedStatement.setDouble(5, Double.parseDouble(coef));  // Insérer le coefficient
+                preparedStatement.setString(6, dateEvaluation);
+                preparedStatement.setString(7, commentaire);
+
+                preparedStatement.executeUpdate();
+
+                // Afficher un message de succès ou fermer la fenêtre
+                System.out.println("Évaluation ajoutée avec succès !");
+                handleClosePopup();
+            } catch (SQLException e) {
+                e.printStackTrace();
+                showError("Erreur", "Impossible d'ajouter l'évaluation.");
+            }
+        } else {
+            showError("Erreur", "Étudiant, matière ou enseignant invalide.");
+        }
+    }
+
+    /**
+     * Récupérer l'ID d'un étudiant, d'une matière ou d'un enseignant en fonction de son nom
+     */
+    private int getIdFromNom(String table, String nom) {
+        String query = "SELECT id FROM " + table + " WHERE nom = ?";
+        try (Connection connection = DatabaseConfig.getConnection();
+             PreparedStatement statement = connection.prepareStatement(query)) {
+            statement.setString(1, nom);
+            ResultSet resultSet = statement.executeQuery();
+            if (resultSet.next()) {
+                return resultSet.getInt("id");
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return -1; // Retourner -1 si l'élément n'a pas été trouvé
+    }
+
+    /**
+     * Fermer le pop-up lorsque le bouton "Fermer" est cliqué.
+     */
+    @FXML
+    private void handleClosePopup() {
+        closeButton.getScene().getWindow().hide();
+    }
+
+    /**
+     * Afficher une alerte d'erreur
+     * @param title Le titre de l'alerte
+     * @param message Le message de l'alerte
+     */
+    private void showError(String title, String message) {
+        Alert alert = new Alert(AlertType.ERROR);
+        alert.setTitle(title);
+        alert.setHeaderText(null);
+        alert.setContentText(message);
+        alert.showAndWait();
+    }
+}

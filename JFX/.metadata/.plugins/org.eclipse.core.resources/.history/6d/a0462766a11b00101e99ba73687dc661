@@ -1,0 +1,115 @@
+package org.openjfx.sio2E4.controller;
+
+import javafx.fxml.FXML;
+import javafx.fxml.FXMLLoader;
+import javafx.scene.Parent;
+import javafx.scene.Scene;
+import javafx.scene.Node;
+import javafx.scene.control.*;
+import javafx.stage.Modality;
+import javafx.stage.Stage;
+import javafx.collections.FXCollections;
+import java.io.IOException;
+import java.sql.*;
+import java.util.ArrayList;
+import java.util.List;
+
+import org.openjfx.sio2E4.controller.DatabaseConfig;
+import org.openjfx.sio2E4.Etudiant;
+import org.openjfx.sio2E4.Matiere;
+
+public class DashboardEnseignantController {
+
+    @FXML
+    private Button showStudentsButton;
+
+    @FXML
+    private Button createEvaluationButton;
+
+    @FXML
+    private Button logoutButton;
+
+    @FXML
+    private void initialize() {
+        // Initialisation du contrôleur
+    }
+
+    /**
+     * Ouvre une fenêtre popup affichant la liste des étudiants.
+     */
+    @FXML
+    private void handleShowStudents() {
+        try {
+            FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("/org/openjfx/sio2E4/StudentsPopup.fxml"));
+            Parent root = fxmlLoader.load();
+
+            Stage stage = new Stage();
+            stage.initModality(Modality.APPLICATION_MODAL);
+            stage.setTitle("Liste des Élèves");
+            stage.setScene(new Scene(root));
+            stage.showAndWait();
+        } catch (IOException e) {
+            e.printStackTrace();
+            showAlert("Erreur", "Impossible d'ouvrir la liste des élèves.");
+        }
+    }
+
+    /**
+     * Ouvre une fenêtre popup pour créer une évaluation.
+     */
+    @FXML
+    private void handleShowEvaluationForm() {
+        try {
+            FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("/org/openjfx/sio2E4/EvaluationPopup.fxml"));
+            Parent root = fxmlLoader.load();
+
+            Stage stage = new Stage();
+            stage.initModality(Modality.APPLICATION_MODAL);
+            stage.setTitle("Créer une Évaluation");
+            stage.setScene(new Scene(root));
+            stage.showAndWait();
+        } catch (IOException e) {
+            e.printStackTrace();
+            showAlert("Erreur", "Impossible d'ouvrir le formulaire d'évaluation.");
+        }
+    }
+
+    /**
+     * Déconnecte l'utilisateur en fermant la fenêtre actuelle.
+     */
+    @FXML
+    private void handleLogout() {
+        System.out.println("Déconnexion...");
+        
+        // Fermer la fenêtre actuelle
+        Stage currentStage = (Stage) logoutButton.getScene().getWindow();
+        currentStage.close();
+        
+        // Charger la page d'accueil (homePage.fxml)
+        try {
+        	FXMLLoader loader = new FXMLLoader(getClass().getResource("/org/openjfx/sio2E4/loginPage.fxml"));
+            Parent root = loader.load();
+            
+            // Créer une nouvelle scène pour la page d'accueil
+            Stage stage = new Stage();
+            stage.setScene(new Scene(root));
+            stage.setTitle("Page d'Accueil");
+            stage.show();
+        } catch (IOException e) {
+            e.printStackTrace();
+            // Gérer l'erreur si la page d'accueil ne peut pas être chargée
+            System.out.println("Erreur lors du chargement de la page d'accueil.");
+        }
+    }
+
+    /**
+     * Affiche une boîte de dialogue d'alerte.
+     */
+    private void showAlert(String title, String message) {
+        Alert alert = new Alert(Alert.AlertType.INFORMATION);
+        alert.setTitle(title);
+        alert.setHeaderText(null);
+        alert.setContentText(message);
+        alert.showAndWait();
+    }
+}

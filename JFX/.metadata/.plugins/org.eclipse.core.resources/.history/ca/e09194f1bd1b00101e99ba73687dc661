@@ -1,0 +1,90 @@
+package org.openjfx.sio2E4.controller;
+
+import javafx.fxml.FXML;
+import javafx.scene.control.*;
+import javafx.stage.Stage;
+import org.openjfx.sio2E4.Etudiant;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+
+public class ModifierEtudiantController {
+
+    @FXML
+    private TextField nomField;
+
+    @FXML
+    private TextField emailField;
+
+    @FXML
+    private TextField telField;
+
+    @FXML
+    private DatePicker dateNaissanceField;
+
+    @FXML
+    private Button modifierButton;
+
+    private Etudiant etudiant;
+
+    /**
+     * Définit l'étudiant à modifier et pré-remplit les champs.
+     */
+    public void setEtudiant(Etudiant etudiant) {
+        this.etudiant = etudiant;
+
+        nomField.setText(etudiant.getNom());
+        emailField.setText(etudiant.getEmail());
+        telField.setText(etudiant.getTel());
+        dateNaissanceField.setValue(java.time.LocalDate.parse(etudiant.getDateNaissance()));
+    }
+
+    /**
+     * Méthode pour modifier un étudiant.
+     */
+    @FXML
+    private void handleModifierEtudiant() {
+        String nom = nomField.getText();
+        String email = emailField.getText();
+        String tel = telField.getText();
+        String dateNaissance = (dateNaissanceField.getValue() != null) ? dateNaissanceField.getValue().toString() : "";
+
+        if (nom.isEmpty() || email.isEmpty() || tel.isEmpty() || dateNaissance.isEmpty()) {
+            showAlert("Erreur", "Tous les champs doivent être remplis.");
+            return;
+        }
+
+        try (Connection connection = DatabaseConfig.getConnection()) {
+            String sql = "UPDATE Etudiants SET nom = ?, email = ?, tel = ?, date_naissance = ? WHERE id = ?";
+            PreparedStatement statement = connection.prepareStatement(sql);
+
+            statement.setString(1, nom);
+            statement.setString(2, email);
+            statement.setString(3, tel);
+            statement.setString(4, dateNaissance);
+            statement.setInt(5, etudiant.getId());
+
+            statement.executeUpdate();
+            showAlert("Succès", "Étudiant modifié avec succès !");
+
+            // Fermer la fenêtre après modification
+            Stage stage = (Stage) modifierButton.getScene().getWindow();
+            stage.close();
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+            showAlert("Erreur", "Impossible de modifier l'étudiant.");
+        }
+    }
+
+    /**
+     * Affiche une boîte de dialogue pour informer l'utilisateur.
+     */
+    private void showAlert(String title, String message) {
+        Alert alert = new Alert(Alert.AlertType.INFORMATION);
+        alert.setTitle(title);
+        alert.setHeaderText(null);
+        alert.setContentText(message);
+        alert.showAndWait();
+    }
+}

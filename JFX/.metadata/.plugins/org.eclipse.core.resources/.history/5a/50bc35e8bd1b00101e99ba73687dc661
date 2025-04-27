@@ -1,0 +1,90 @@
+package org.openjfx.sio2E4.controller;
+
+import javafx.fxml.FXML;
+import javafx.scene.control.*;
+import javafx.stage.Stage;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.HashMap;
+import java.util.Map;
+
+public class MatiereController {
+
+    @FXML
+    private TextField nomField;
+
+    @FXML
+    private TextField codeField;
+
+    @FXML
+    private ComboBox<String> enseignantComboBox;
+
+    private Map<String, Integer> enseignantsMap = new HashMap<>();
+
+    @FXML
+    private Button creerButton;
+
+    @FXML
+    private void initialize() {
+        // Charger la liste des enseignants depuis la base de données
+        try (Connection connection = DatabaseConfig.getConnection();
+             PreparedStatement stmt = connection.prepareStatement("SELECT id, nom FROM Enseignants");
+             ResultSet rs = stmt.executeQuery()) {
+
+            while (rs.next()) {
+                String nom = rs.getString("nom");
+                int id = rs.getInt("id");
+                enseignantsMap.put(nom, id);
+                enseignantComboBox.getItems().add(nom);
+            }
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+            showAlert("Erreur", "Impossible de charger les enseignants.");
+        }
+    }
+
+    @FXML
+    private void handleCreerMatiere() {
+        String nom = nomField.getText();
+        String code = codeField.getText();
+        String nomEnseignant = enseignantComboBox.getValue();
+
+        if (nom.isEmpty() || code.isEmpty() || nomEnseignant == null) {
+            showAlert("Erreur", "Tous les champs doivent être remplis.");
+            return;
+        }
+
+        int enseignantId = enseignantsMap.get(nomEnseignant);
+
+        try (Connection connection = DatabaseConfig.getConnection()) {
+            String sql = "INSERT INTO Matieres (nom, code, enseignant_id) VALUES (?, ?, ?)";
+            PreparedStatement statement = connection.prepareStatement(sql);
+
+            statement.setString(1, nom);
+            statement.setString(2, code);
+            statement.setInt(3, enseignantId);
+
+            statement.executeUpdate();
+            showAlert("Succès", "Matière ajoutée avec succès !");
+
+            // Fermer la fenêtre
+            Stage stage = (Stage) creerButton.getScene().getWindow();
+            stage.close();
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+            showAlert("Erreur", "Impossible d'ajouter la matière.");
+        }
+    }
+
+    private void showAlert(String title, String message) {
+        Alert alert = new Alert(Alert.AlertType.INFORMATION);
+        alert.setTitle(title);
+        alert.setHeaderText(null);
+        alert.setContentText(message);
+        alert.showAndWait();
+    }
+}

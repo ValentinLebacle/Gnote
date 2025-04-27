@@ -1,0 +1,95 @@
+package org.openjfx.sio2E4.controller;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import javafx.application.Platform;
+import javafx.beans.property.SimpleStringProperty;
+import javafx.fxml.FXML;
+import javafx.scene.control.TableColumn;
+import javafx.scene.control.TableView;
+import org.openjfx.sio2E4.model.Note;
+import org.openjfx.sio2E4.service.AuthService;
+
+import java.io.IOException;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.util.Arrays;
+import java.util.List;
+
+public class NotesController {
+
+    @FXML private TableView<Note> notesTable;
+    @FXML private TableColumn<Note, String> eleveColumn;
+    @FXML private TableColumn<Note, String> enseignantColumn;
+    @FXML private TableColumn<Note, String> matiereColumn;
+    @FXML private TableColumn<Note, String> valeurColumn;
+    @FXML private TableColumn<Note, String> dateColumn;
+    @FXML private TableColumn<Note, String> commentaireColumn;
+    @FXML private TableColumn<Note, String> noteTypeColumn;  // Nouvelle colonne pour le type de la note
+
+    private final String API_URL = "http://localhost:8080/api/notes";
+    private final String BEARER_TOKEN = "Bearer " + AuthService.getToken();
+
+    @FXML
+    public void initialize() {
+        // Mapping des colonnes
+        eleveColumn.setCellValueFactory(data -> new SimpleStringProperty(
+            data.getValue().getEleve().getPrenom() + " " + data.getValue().getEleve().getNom())
+        );
+        
+        enseignantColumn.setCellValueFactory(data -> new SimpleStringProperty(
+            data.getValue().getEnseignant().getPrenom() + " " + data.getValue().getEnseignant().getNom())
+        );
+        
+        matiereColumn.setCellValueFactory(data -> new SimpleStringProperty(
+            data.getValue().getMatiere().getLibelle())
+        );
+        
+        valeurColumn.setCellValueFactory(data -> new SimpleStringProperty(
+            String.valueOf(data.getValue().getValeur()))
+        );
+        
+        dateColumn.setCellValueFactory(data -> new SimpleStringProperty(
+            data.getValue().getDate())
+        );
+        
+        commentaireColumn.setCellValueFactory(data -> new SimpleStringProperty(
+            data.getValue().getCommentaire())
+        );
+        
+        // Nouvelle colonne pour le type de la note
+        noteTypeColumn.setCellValueFactory(data -> new SimpleStringProperty(
+            data.getValue().getNoteType()) // Récupérer le libellé du type de note
+        );
+
+        fetchNotes();
+    }
+
+    private void fetchNotes() {
+        HttpClient client = HttpClient.newHttpClient();
+        HttpRequest request = HttpRequest.newBuilder()
+            .uri(URI.create(API_URL))
+            .header("Authorization", BEARER_TOKEN)
+            .GET()
+            .build();
+
+        client.sendAsync(request, HttpResponse.BodyHandlers.ofString())
+            .thenApply(HttpResponse::body)
+            .thenAccept(this::parseNotes)
+            .exceptionally(e -> {
+                e.printStackTrace();
+                return null;
+            });
+    }
+
+    private void parseNotes(String responseBody) {
+        ObjectMapper mapper = new ObjectMapper();
+        try {
+            List<Note> notes = Arrays.asList(mapper.readValue(responseBody, Note[].class));
+            Platform.runLater(() -> notesTable.getItems().setAll(notes));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+}

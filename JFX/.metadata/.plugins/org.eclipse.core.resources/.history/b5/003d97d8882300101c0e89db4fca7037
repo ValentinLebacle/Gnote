@@ -1,0 +1,5 @@
+package org.openjfx.sio2E4.model;
+
+public class Note {
+
+}

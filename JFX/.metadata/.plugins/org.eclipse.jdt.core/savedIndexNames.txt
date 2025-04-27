@@ -1,0 +1,14 @@
+INDEX VERSION 1.134+E:\Code\gnote\JFX\.metadata\.plugins\org.eclipse.jdt.core
+1865797976.index
+3266820579.index
+1940162069.index
+871327303.index
+2307794937.index
+563536412.index
+505010005.index
+4150964664.index
+1363750320.index
+2799278310.index
+853231948.index
+3413270776.index
+4229615673.index
