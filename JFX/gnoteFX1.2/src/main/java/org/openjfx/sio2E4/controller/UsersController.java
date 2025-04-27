@@ -4,6 +4,7 @@ import javafx.application.Platform;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
+import javafx.scene.control.Alert.AlertType;
 import javafx.scene.layout.StackPane;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
@@ -15,6 +16,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
+import java.net.http.HttpRequest.BodyPublishers;
 import java.net.http.HttpResponse;
 import java.util.Arrays;
 import java.util.List;
@@ -34,8 +36,14 @@ public class UsersController {
     private final String API_URL = "http://localhost:8080/api/users";
     private final String BEARER_TOKEN = "Bearer " + AuthService.getToken();
 
+    @FXML private ComboBox<String> roleComboBox;
+    
     @FXML
     public void initialize() {
+    	roleComboBox.getItems().addAll("ADMIN", "ENSEIGNANT", "ETUDIANT");
+    	
+    	
+    	
         nomColumn.setCellValueFactory(data -> new SimpleStringProperty(data.getValue().getNom()));
         prenomColumn.setCellValueFactory(data -> new SimpleStringProperty(data.getValue().getPrenom()));
         emailColumn.setCellValueFactory(data -> new SimpleStringProperty(data.getValue().getEmail()));
@@ -109,5 +117,106 @@ public class UsersController {
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+    
+    // Info de formulaire 
+    @FXML private TextField nomField;
+    @FXML private TextField prenomField;
+    @FXML private TextField emailField;
+    @FXML private TextField telephoneField;
+    @FXML private TextField adresseField;
+    @FXML private PasswordField passwordField;
+    @FXML private TextField roleField;
+    @FXML private Button ajouterButton;
+  
+
+    
+
+
+    
+    @FXML
+    private void ajouterUtilisateur() {
+        try {
+            String nom = nomField.getText().trim();
+            String prenom = prenomField.getText().trim();
+            String email = emailField.getText().trim();
+            String adresse = adresseField.getText().trim();
+            String telephone = telephoneField.getText().trim();
+            String password = passwordField.getText();
+            String selectedRole = roleComboBox.getValue();
+            int roleId = getRoleId(selectedRole);
+
+            if (nom.isEmpty() || prenom.isEmpty() || email.isEmpty() || password.isEmpty()) {
+                showAlert(AlertType.WARNING, "Veuillez remplir tous les champs obligatoires.");
+                return;
+            }
+
+            // Construction du JSON
+            String json = String.format(
+                "{\"nom\":\"%s\",\"prenom\":\"%s\",\"email\":\"%s\",\"adresse\":\"%s\",\"telephone\":\"%s\",\"passwordHash\":\"%s\",\"role\":{\"id\":%d,\"libelle\":\"%s\"}}",
+                nom, prenom, email, adresse, telephone, password, roleId, selectedRole
+            );
+
+            HttpClient client = HttpClient.newHttpClient();
+            HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(API_URL))
+                .header("Authorization", BEARER_TOKEN)
+                .header("Content-Type", "application/json")
+                .POST(BodyPublishers.ofString(json))
+                .build();
+
+            client.sendAsync(request, HttpResponse.BodyHandlers.ofString())
+                .thenAccept(response -> {
+                    if (response.statusCode() == 201 || response.statusCode() == 200) {
+                        Platform.runLater(() -> showAlert(AlertType.INFORMATION, "Utilisateur ajouté avec succès !"));
+                        clearForm();
+                        Platform.runLater(this::fetchUsers);
+                        // Optionnel : refreshTable(); si tu veux actualiser la liste
+                    } else {
+                        Platform.runLater(() -> showAlert(AlertType.ERROR, "Erreur lors de l'ajout : " + response.body()));
+                    }
+                })
+                .exceptionally(e -> {
+                    e.printStackTrace();
+                    Platform.runLater(() -> showAlert(AlertType.ERROR, "Erreur réseau : " + e.getMessage()));
+                    return null;
+                });
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            showAlert(AlertType.ERROR, "Erreur interne : " + e.getMessage());
+        }
+    }
+
+    private int getRoleId(String roleName) {
+        switch (roleName) {
+            case "ADMIN":
+                return 1;
+            case "ENSEIGNANT":
+                return 2;
+            case "ETUDIANT":
+                return 3;
+            default:
+                return 3;
+        }
+    }
+
+
+    private void showAlert(AlertType type, String message) {
+        Alert alert = new Alert(type);
+        alert.setTitle("Information");
+        alert.setHeaderText(null);
+        alert.setContentText(message);
+        alert.showAndWait();
+    }
+
+    private void clearForm() {
+        nomField.clear();
+        prenomField.clear();
+        emailField.clear();
+        adresseField.clear();
+        telephoneField.clear();
+        passwordField.clear();
+        roleComboBox.getSelectionModel().selectFirst();
     }
 }

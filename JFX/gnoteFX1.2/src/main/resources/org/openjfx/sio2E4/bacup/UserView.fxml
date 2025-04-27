@@ -1,15 +1,16 @@
 <?xml version="1.0" encoding="UTF-8"?>
+
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 
 <VBox xmlns:fx="http://javafx.com/fxml/1"
-      fx:controller="org.openjfx.sio2E4.controller.UsersController"
-      spacing="10" alignment="TOP_CENTER"
-      style="-fx-padding: 20;">
+    fx:controller="org.openjfx.sio2E4.controller.UsersController"
+    spacing="10" alignment="TOP_CENTER"
+    style="-fx-padding: 20;">
 
     <!-- Titre de la page -->
     <Label text="Liste des utilisateurs"
-           style="-fx-font-size: 24px; -fx-font-weight: bold; -fx-alignment: top-left;" />
+        style="-fx-font-size: 24px; -fx-font-weight: bold; -fx-alignment: top-left;" />
 
     <!-- Tableau des utilisateurs -->
     <TableView fx:id="usersTable" prefWidth="800">
@@ -22,10 +23,6 @@
             <TableColumn fx:id="roleColumn" text="Rôle" prefWidth="80" />
         </columns>
     </TableView>
-
-    <!-- Conteneur pour afficher la UserCardView -->
-    <StackPane fx:id="contentArea" prefWidth="800" prefHeight="400" />
-    
     <Label text="Formulaire d'ajout d'utilisateur"
-           style="-fx-font-size: 24px; -fx-font-weight: bold; -fx-alignment: top-left;" />
+        style="-fx-font-size: 24px; -fx-font-weight: bold; -fx-alignment: top-left;" />
 </VBox>
