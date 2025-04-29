@@ -6,6 +6,8 @@ import javafx.beans.property.SimpleStringProperty;
 import javafx.fxml.FXML;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
+
+import org.openjfx.sio2E4.model.LocalUser;
 import org.openjfx.sio2E4.model.Note;
 import org.openjfx.sio2E4.service.AuthService;
 
@@ -18,7 +20,11 @@ import java.util.Arrays;
 import java.util.List;
 
 public class NotesController {
+	
+	LocalUser currentUser = AuthService.getCurrentUser();
+    String role = currentUser.getRole();
 
+	
     @FXML private TableView<Note> notesTable;
     @FXML private TableColumn<Note, String> eleveColumn;
     @FXML private TableColumn<Note, String> enseignantColumn;
@@ -91,5 +97,84 @@ public class NotesController {
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+    
+    
+    @FXML private javafx.scene.control.TextField eleveField;
+    @FXML private javafx.scene.control.TextField enseignantField;
+    @FXML private javafx.scene.control.TextField matiereField;
+    @FXML private javafx.scene.control.TextField valeurField;
+    @FXML private javafx.scene.control.ComboBox<String> noteTypeComboBox;
+    @FXML private javafx.scene.control.TextField dateField;
+    @FXML private javafx.scene.control.TextField commentaireField;
+    @FXML private javafx.scene.control.Button ajouterNoteButton;
+
+    @FXML
+    private void ajouterNote() {
+        try {
+            // Récupérer les données du formulaire
+            String eleve = eleveField.getText();
+            String enseignant = enseignantField.getText();
+            String matiere = matiereField.getText();
+            double valeur = Double.parseDouble(valeurField.getText());
+            String noteType = noteTypeComboBox.getValue();
+            String date = dateField.getText();
+            String commentaire = commentaireField.getText();
+
+            String json = String.format(
+            	    "{"
+            	    + "\"eleve\": { \"nom\": \"%s\" },"
+            	    + "\"enseignant\": { \"nom\": \"%s\" },"
+            	    + "\"matiere\": { \"libelle\": \"%s\" },"
+            	    + "\"valeur\": %s,"
+            	    + "\"noteType\": \"%s\","
+            	    + "\"date\": \"%s\","
+            	    + "\"commentaire\": \"%s\""
+            	    + "}",
+            	    eleve, enseignant, matiere, valeur, noteType, date, commentaire
+            	);
+
+
+
+            // Préparer et envoyer la requête POST
+            HttpClient client = HttpClient.newHttpClient();
+            HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(API_URL))
+                .header("Authorization", BEARER_TOKEN)
+                .header("Content-Type", "application/json")
+                .POST(HttpRequest.BodyPublishers.ofString(json))
+                .build();
+
+            client.sendAsync(request, HttpResponse.BodyHandlers.ofString())
+                .thenAccept(response -> {
+                    if (response.statusCode() == 201 || response.statusCode() == 200) {
+                        // Succès : rafraîchir la liste
+                        fetchNotes();
+                        clearForm();
+                    } else {
+                        System.err.println("Erreur à l'ajout : " + response.body());
+                    }
+                })
+                .exceptionally(e -> {
+                    e.printStackTrace();
+                    return null;
+                });
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    // Méthode utilitaire pour vider le formulaire
+    private void clearForm() {
+        Platform.runLater(() -> {
+            eleveField.clear();
+            enseignantField.clear();
+            matiereField.clear();
+            valeurField.clear();
+            noteTypeComboBox.setValue(null);
+            dateField.clear();
+            commentaireField.clear();
+        });
     }
 }
