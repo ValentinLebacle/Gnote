@@ -7,6 +7,10 @@ import com.saintsau.slam2.gnotes30.entity.User;
 import com.saintsau.slam2.gnotes30.jpaRepository.MatiereAssociationRepository;
 import com.saintsau.slam2.gnotes30.jpaRepository.MatiereRepository;
 import com.saintsau.slam2.gnotes30.jpaRepository.UserRepository;
+
+import java.util.List;
+import java.util.stream.Collectors;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -45,4 +49,22 @@ public class MatiereAssociationService {
 
 		matiereAssociationRepository.delete(association);
 	}
+	
+	
+	
+	
+
+	public List<Matiere> getMatieresByUser(Integer userId) {
+	    List<MatiereAssociation> associations = matiereAssociationRepository.findByUserId(userId);
+
+	    if (associations.isEmpty()) {
+	        throw new RuntimeException("Aucune matière trouvée pour cet utilisateur");
+	    }
+
+	    return associations.stream()
+	            .map(MatiereAssociation::getMatiere)
+	            .collect(Collectors.toList());
+	}
+
+	
 }

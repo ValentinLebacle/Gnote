@@ -1,7 +1,10 @@
 package com.saintsau.slam2.gnotes30.controller;
 
+import com.saintsau.slam2.gnotes30.entity.Matiere;
 import com.saintsau.slam2.gnotes30.service.MatiereAssociationService;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 import org.springframework.hateoas.EntityModel;
@@ -22,6 +25,31 @@ public class MatiereAssociationController {
         this.matiereAssociationService = matiereAssociationService;
     }
 
+    @GetMapping("/{userId}/matieres")
+    public ResponseEntity<List<EntityModel<Matiere>>> getMatieresByUser(@PathVariable Integer userId) {
+        try {
+            List<Matiere> matieres = matiereAssociationService.getMatieresByUser(userId);
+            List<EntityModel<Matiere>> matiereModels = new ArrayList<>();
+
+            for (Matiere matiere : matieres) {
+                EntityModel<Matiere> resource = EntityModel.of(matiere);
+                
+                // Ajout du lien vers la matière spécifique
+                resource.add(linkTo(methodOn(MatiereController.class).getMatiereById(matiere.getId())).withSelfRel());
+                
+                // Optionnellement, tu peux aussi ajouter un lien vers la liste de toutes les matières
+                resource.add(linkTo(MatiereController.class).withRel("all-matieres"));
+                
+                matiereModels.add(resource);
+            }
+
+            return ResponseEntity.ok(matiereModels);
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        }
+    }
+
+    
     @PostMapping("/{userId}/matieres/{matId}")
     public ResponseEntity<EntityModel<Map<String, String>>> associerMatiereAUser(@PathVariable Integer userId, @PathVariable Integer matId) {
         try {
@@ -54,4 +82,7 @@ public class MatiereAssociationController {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(EntityModel.of(errorResponse));
         }
     }
+    
+    
+
 }

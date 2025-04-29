@@ -2,6 +2,11 @@ package com.saintsau.slam2.gnotes30.controller;
 
 import com.saintsau.slam2.gnotes30.entity.User;
 import com.saintsau.slam2.gnotes30.service.UserService;
+
+import com.saintsau.slam2.gnotes30.entity.Note;
+import com.saintsau.slam2.gnotes30.service.NoteService;
+
+
 import org.springframework.hateoas.EntityModel;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.*;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,6 +24,9 @@ public class UserController {
 
 	@Autowired
 	private UserService userService;
+	
+	@Autowired
+	private NoteService noteService;
 
 	// GET ALL Users
 	@GetMapping
@@ -49,6 +57,48 @@ public class UserController {
 
 		return ResponseEntity.ok(resource);
 	}
+
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	// GET Notes liées à un utilisateur (comme élève ou enseignant)
+	@GetMapping("/{id}/notes")
+	public ResponseEntity<List<EntityModel<Note>>> getNotesByUserId(@PathVariable Integer id) {
+		Optional<User> userOpt = userService.getUserById(id);
+		if (userOpt.isEmpty()) {
+			return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+		}
+		User user = userOpt.get();
+
+		List<Note> notes = noteService.getNotesByUser(user); // méthode à créer dans ton NoteService
+		List<EntityModel<Note>> noteModels = new ArrayList<>();
+
+		for (Note note : notes) {
+			EntityModel<Note> resource = EntityModel.of(note);
+			resource.add(linkTo(methodOn(NoteController.class).getNoteById(note.getId())).withSelfRel());
+			noteModels.add(resource);
+		}
+
+		return ResponseEntity.ok(noteModels);
+	}
+
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
 
 	// POST Création Etudiants
 	@PostMapping

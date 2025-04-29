@@ -1,6 +1,7 @@
 package com.saintsau.slam2.gnotes30.service;
 
 import com.saintsau.slam2.gnotes30.entity.Note;
+import com.saintsau.slam2.gnotes30.entity.User;
 import com.saintsau.slam2.gnotes30.jpaRepository.NoteRepository;
 import org.springframework.stereotype.Service;
 
@@ -47,4 +48,9 @@ public class NoteService {
     public void deleteNote(Long id) {
         noteRepository.deleteById(id);
     }
+    
+    public List<Note> getNotesByUser(User user) {
+    	return noteRepository.findByEleveOrEnseignant(user, user);
+    }
+
 }

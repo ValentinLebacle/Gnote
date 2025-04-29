@@ -94,11 +94,14 @@ public class UsersController {
         ObjectMapper mapper = new ObjectMapper();
         try {
             List<User> users = Arrays.asList(mapper.readValue(responseBody, User[].class));
+
+            // Assurer que la mise à jour du tableau se fait sur le thread principal JavaFX
             Platform.runLater(() -> usersTable.getItems().setAll(users));
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
+
 
     // Méthode pour afficher la carte utilisateur
     private void handleShowUserCard(int userId) {
@@ -219,4 +222,45 @@ public class UsersController {
         passwordField.clear();
         roleComboBox.getSelectionModel().selectFirst();
     }
+    
+    @FXML
+    private void handleDeleteUser() {
+        // Récupérer l'utilisateur sélectionné dans le tableau
+        User selectedUser = usersTable.getSelectionModel().getSelectedItem();
+        
+        if (selectedUser == null) {
+            showAlert(AlertType.WARNING, "Veuillez sélectionner un utilisateur à supprimer.");
+            return;
+        }
+
+        // Supprimer l'utilisateur immédiatement
+        deleteUser(selectedUser.getId());
+    }
+
+    private void deleteUser(int userId) {
+        HttpClient client = HttpClient.newHttpClient();
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(API_URL + "/" + userId))
+                .header("Authorization", BEARER_TOKEN)
+                .DELETE()
+                .build();
+
+        client.sendAsync(request, HttpResponse.BodyHandlers.ofString())
+                .thenAccept(response -> {
+                    if (response.statusCode() == 204) {  // 204 No Content signifie que la suppression a réussi
+                        Platform.runLater(() -> {
+                            showAlert(AlertType.INFORMATION, "Utilisateur supprimé avec succès.");
+                            fetchUsers(); // Rafraîchit la liste des utilisateurs
+                        });
+                    } else {
+                        Platform.runLater(() -> showAlert(AlertType.ERROR, "Erreur lors de la suppression de l'utilisateur."));
+                    }
+                })
+                .exceptionally(e -> {
+                    e.printStackTrace();
+                    Platform.runLater(() -> showAlert(AlertType.ERROR, "Erreur réseau : " + e.getMessage()));
+                    return null;
+                });
+    }
+
 }

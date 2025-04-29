@@ -24,6 +24,10 @@
         </columns>
     </TableView>
 
+    <HBox spacing="10">
+        <Button text="Supprimer" onAction="#handleDeleteUser" />
+    </HBox>
+    
     <!-- Formulaire d'ajout d'utilisateur -->
     <Label text="Formulaire d'ajout d'utilisateur"
         style="-fx-font-size: 24px; -fx-font-weight: bold; -fx-alignment: top-left;" />
