@@ -19,7 +19,9 @@
             <TableColumn fx:id="commentaireColumn" text="Commentaire" prefWidth="190"/>
         </columns>
     </TableView>
-
+    <HBox spacing="10">
+        <Button text="Supprimer" onAction="#handleDeleteNote" />
+    </HBox>
     <!-- Formulaire d'ajout d'une note -->
     <Label text="Ajouter une Note" style="-fx-font-size: 24px; -fx-font-weight: bold; -fx-alignment: top-left;"/>
 

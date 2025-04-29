@@ -1,7 +1,9 @@
 package com.saintsau.slam2.gnotes30.controller;
 
 import com.saintsau.slam2.gnotes30.entity.Note;
+import com.saintsau.slam2.gnotes30.entity.NoteType;
 import com.saintsau.slam2.gnotes30.service.NoteService;
+import com.saintsau.slam2.gnotes30.service.NoteTypeService;
 
 import org.springframework.hateoas.EntityModel;
 import org.springframework.http.HttpStatus;
@@ -19,10 +21,13 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.*;
 public class NoteController {
 
 	private final NoteService noteService;
-
-	public NoteController(NoteService noteService) {
-		this.noteService = noteService;
-	}
+	private final NoteTypeService noteTypeService;
+	
+	// Constructeur unique avec toutes les dépendances
+		public NoteController(NoteService noteService, NoteTypeService noteTypeService) {
+			this.noteService = noteService;
+			this.noteTypeService = noteTypeService;
+		}
 
 	// Récupérer toutes les notes
 	@GetMapping
@@ -82,4 +87,33 @@ public class NoteController {
 		noteService.deleteNote(id);
 		return ResponseEntity.noContent().build();
 	}
+	// Récupérer tous les types de notes
+    @GetMapping("/type")
+    public List<EntityModel<NoteType>> getAllNoteTypes() {
+        List<NoteType> noteTypes = noteTypeService.getAllNoteTypes();
+        List<EntityModel<NoteType>> noteTypeModels = new ArrayList<>();
+
+        for (NoteType noteType : noteTypes) {
+            EntityModel<NoteType> resource = EntityModel.of(noteType);
+            resource.add(linkTo(methodOn(NoteController.class).getNoteTypeById(noteType.getId())).withSelfRel());
+            noteTypeModels.add(resource);
+        }
+
+        return noteTypeModels;
+    }
+
+    // Récupérer un type de note par ID
+    @GetMapping("/type/{id}")
+    public ResponseEntity<EntityModel<NoteType>> getNoteTypeById(@PathVariable Integer id) {
+        Optional<NoteType> noteType = noteTypeService.getNoteTypeById(id);
+        if (noteType.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        }
+
+        EntityModel<NoteType> resource = EntityModel.of(noteType.get());
+        resource.add(linkTo(methodOn(NoteController.class).getNoteTypeById(id)).withSelfRel());
+        resource.add(linkTo(methodOn(NoteController.class).getAllNoteTypes()).withRel("all-note-types"));
+
+        return ResponseEntity.ok(resource);
+    }
 }

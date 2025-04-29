@@ -4,8 +4,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import javafx.application.Platform;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.fxml.FXML;
+import javafx.scene.control.Alert;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
+import javafx.scene.control.Alert.AlertType;
 
 import org.openjfx.sio2E4.model.LocalUser;
 import org.openjfx.sio2E4.model.Note;
@@ -177,4 +179,51 @@ public class NotesController {
             commentaireField.clear();
         });
     }
+    
+    private void showAlert(AlertType type, String message) {
+        Alert alert = new Alert(type);
+        alert.setTitle("Information");
+        alert.setHeaderText(null);
+        alert.setContentText(message);
+        alert.showAndWait();
+    }
+    
+    @FXML
+    private void handleDeleteNote() {
+        Note selectedNote = notesTable.getSelectionModel().getSelectedItem();
+
+        if (selectedNote == null) {
+            showAlert(Alert.AlertType.WARNING, "Veuillez sélectionner une note à supprimer.");
+            return;
+        }
+
+        deleteNote(selectedNote.getId());
+    }
+
+    private void deleteNote(int noteId) {
+        HttpClient client = HttpClient.newHttpClient();
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create("http://localhost:8080/api/notes/" + noteId))
+                .header("Authorization", "Bearer " + AuthService.getToken())
+                .DELETE()
+                .build();
+
+        client.sendAsync(request, HttpResponse.BodyHandlers.ofString())
+                .thenAccept(response -> {
+                    if (response.statusCode() == 204) {
+                        Platform.runLater(() -> {
+                            showAlert(Alert.AlertType.INFORMATION, "Note supprimée avec succès.");
+                            fetchNotes(); // Méthode pour recharger la liste
+                        });
+                    } else {
+                        Platform.runLater(() -> showAlert(Alert.AlertType.ERROR, "Erreur lors de la suppression de la note."));
+                    }
+                })
+                .exceptionally(e -> {
+                    e.printStackTrace();
+                    Platform.runLater(() -> showAlert(Alert.AlertType.ERROR, "Erreur réseau : " + e.getMessage()));
+                    return null;
+                });
+    }
+
 }
