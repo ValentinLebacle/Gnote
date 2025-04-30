@@ -5,9 +5,13 @@ import javafx.beans.property.SimpleStringProperty;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import javafx.scene.control.Alert.AlertType;
+import javafx.scene.layout.GridPane;
 import javafx.scene.layout.StackPane;
 import javafx.fxml.FXMLLoader;
+import javafx.geometry.Insets;
 import javafx.scene.Parent;
+
+import org.openjfx.sio2E4.model.Role;
 import org.openjfx.sio2E4.model.User;
 import org.openjfx.sio2E4.service.AuthService;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -262,5 +266,118 @@ public class UsersController {
                     return null;
                 });
     }
+    
+    // --------------------------Modification de l'utilisateur par boite de dialogue
+    
+    @FXML
+    private void handleEditUser() {
+        User selectedUser = usersTable.getSelectionModel().getSelectedItem();
+        if (selectedUser == null) {
+            showAlert(AlertType.WARNING, "Veuillez sélectionner un utilisateur à modifier.");
+            return;
+        }
+        showEditDialog(selectedUser);
+    }
+    
+    private void updateUser(User user) {
+        try {
+            ObjectMapper mapper = new ObjectMapper();
+            String json = mapper.writeValueAsString(user);
+
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(API_URL + "/" + user.getId()))
+                    .header("Authorization", BEARER_TOKEN)
+                    .header("Content-Type", "application/json")
+                    .PUT(HttpRequest.BodyPublishers.ofString(json))
+                    .build();
+
+            HttpClient client = HttpClient.newHttpClient();
+            client.sendAsync(request, HttpResponse.BodyHandlers.ofString())
+                .thenAccept(response -> {
+                    if (response.statusCode() == 200) {
+                        Platform.runLater(() -> {
+                            showAlert(AlertType.INFORMATION, "Utilisateur modifié avec succès !");
+                            fetchUsers();
+                        });
+                    } else {
+                        Platform.runLater(() -> showAlert(AlertType.ERROR, "Erreur de modification : " + response.body()));
+                    }
+                })
+                .exceptionally(e -> {
+                    e.printStackTrace();
+                    Platform.runLater(() -> showAlert(AlertType.ERROR, "Erreur réseau : " + e.getMessage()));
+                    return null;
+                });
+            System.out.println("ID: " + user.getId());
+            System.out.println("Nom: " + user.getNom());
+            System.out.println("Prénom: " + user.getPrenom());
+            System.out.println("Email: " + user.getEmail());
+            System.out.println("Adresse: " + user.getAdresse());
+            System.out.println("Téléphone: " + user.getTelephone());
+            System.out.println("Rôle: " + user.getRole().getLibelle() + " (ID: " + user.getRole().getId() + ")");
+        } catch (Exception e) {
+            e.printStackTrace();
+            showAlert(AlertType.ERROR, "Erreur lors de la mise à jour.");
+        }
+    }
+    private void showEditDialog(User user) {
+        Dialog<User> dialog = new Dialog<>();
+        dialog.setTitle("Modifier l'utilisateur");
+        dialog.setHeaderText("Modifiez les informations de l'utilisateur :");
+
+        // Boutons OK / Annuler
+        ButtonType saveButtonType = new ButtonType("Enregistrer", ButtonBar.ButtonData.OK_DONE);
+        dialog.getDialogPane().getButtonTypes().addAll(saveButtonType, ButtonType.CANCEL);
+
+        // Création du formulaire
+        GridPane grid = new GridPane();
+        grid.setHgap(10);
+        grid.setVgap(10);
+        grid.setPadding(new Insets(20, 150, 10, 10));
+
+        TextField nomField = new TextField(user.getNom());
+        TextField prenomField = new TextField(user.getPrenom());
+        TextField emailField = new TextField(user.getEmail());
+        TextField adresseField = new TextField(user.getAdresse());
+        TextField telephoneField = new TextField(user.getTelephone());
+        ComboBox<String> roleBox = new ComboBox<>();
+        roleBox.getItems().addAll("ADMIN", "ENSEIGNANT", "ETUDIANT");
+        roleBox.setValue(user.getRole().getLibelle());
+
+        grid.add(new Label("Nom:"), 0, 0); grid.add(nomField, 1, 0);
+        grid.add(new Label("Prénom:"), 0, 1); grid.add(prenomField, 1, 1);
+        grid.add(new Label("Email:"), 0, 2); grid.add(emailField, 1, 2);
+        grid.add(new Label("Adresse:"), 0, 3); grid.add(adresseField, 1, 3);
+        grid.add(new Label("Téléphone:"), 0, 4); grid.add(telephoneField, 1, 4);
+        grid.add(new Label("Rôle:"), 0, 5); grid.add(roleBox, 1, 5);
+
+        dialog.getDialogPane().setContent(grid);
+
+        // Convertir le résultat quand l'utilisateur clique sur Enregistrer
+        dialog.setResultConverter(dialogButton -> {
+            if (dialogButton == saveButtonType) {
+                user.setNom(nomField.getText());
+                user.setPrenom(prenomField.getText());
+                user.setEmail(emailField.getText());
+                user.setAdresse(adresseField.getText());
+                user.setTelephone(telephoneField.getText());
+                String selectedRole = roleBox.getValue();
+                int roleId = getRoleId(selectedRole);
+
+                // On recrée un rôle pour éviter les nulls
+                user.setRole(new Role(roleId, selectedRole));
+
+                
+                return user;
+            }
+            
+            return null;
+        });
+
+        dialog.showAndWait().ifPresent(updatedUser -> updateUser(updatedUser));
+    }
+
+
+
 
 }

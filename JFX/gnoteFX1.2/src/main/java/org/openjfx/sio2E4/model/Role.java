@@ -21,4 +21,9 @@ public class Role {
     public void setLibelle(String libelle) {
         this.libelle = libelle;
     }
+    public Role(int id, String libelle) {
+        this.id = id;
+        this.libelle = libelle;
+    }
+
 }

@@ -26,6 +26,7 @@
 
     <HBox spacing="10">
         <Button text="Supprimer" onAction="#handleDeleteUser" />
+        <Button text="Modifier" onAction="#handleEditUser" />
     </HBox>
     
     <!-- Formulaire d'ajout d'utilisateur -->
