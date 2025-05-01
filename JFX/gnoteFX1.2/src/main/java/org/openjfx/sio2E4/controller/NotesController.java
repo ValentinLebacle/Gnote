@@ -11,6 +11,7 @@ import javafx.scene.control.Alert.AlertType;
 
 import org.openjfx.sio2E4.model.LocalUser;
 import org.openjfx.sio2E4.model.Note;
+import org.openjfx.sio2E4.model.User;
 import org.openjfx.sio2E4.service.AuthService;
 
 import java.io.IOException;
@@ -20,13 +21,14 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class NotesController {
 	
 	LocalUser currentUser = AuthService.getCurrentUser();
     String role = currentUser.getRole();
 
-	
+    /*Tableau d'affichage de note*/
     @FXML private TableView<Note> notesTable;
     @FXML private TableColumn<Note, String> eleveColumn;
     @FXML private TableColumn<Note, String> enseignantColumn;
@@ -35,12 +37,30 @@ public class NotesController {
     @FXML private TableColumn<Note, String> dateColumn;
     @FXML private TableColumn<Note, String> commentaireColumn;
     @FXML private TableColumn<Note, String> noteTypeColumn;
+    @FXML private TableColumn<Note, String> coefficientColumn;
 
+    /*Formulaire de saisie de note*/
+    @FXML private javafx.scene.control.ComboBox<String> eleveComboBox;
+    @FXML private javafx.scene.control.ComboBox<String> enseignantComboBox;
+    @FXML private javafx.scene.control.DatePicker datePicker;
+    @FXML private javafx.scene.control.TextArea commentaireField;
+    @FXML private javafx.scene.control.TextField coefficientField;
+
+
+    
     private final String API_URL = "http://localhost:8080/api/notes";
     private final String BEARER_TOKEN = "Bearer " + AuthService.getToken();
 
     @FXML
     public void initialize() {
+    	
+    	LocalUser user = AuthService.getCurrentUser();
+    	
+    	String LocalUserRole = user.getRole();
+		String LocalUserNom = user.getNom();
+		String LocalUserPrenom = user.getPrenom();
+		int LocalUserId = user.getId();
+		
         // Mapping des colonnes
         eleveColumn.setCellValueFactory(data -> new SimpleStringProperty(
             data.getValue().getEleve().getPrenom() + " " + data.getValue().getEleve().getNom())
@@ -70,8 +90,15 @@ public class NotesController {
         noteTypeColumn.setCellValueFactory(data -> new SimpleStringProperty(
             data.getValue().getNoteType())
         );
+        
+        coefficientColumn.setCellValueFactory(data -> new SimpleStringProperty(
+        	    String.valueOf(data.getValue().getCoefficient()))
+        	);
+
 
         fetchNotes();
+        setupFormFields();
+        chargerUtilisateursDepuisAPI();
     }
 
     private void fetchNotes() {
@@ -107,8 +134,6 @@ public class NotesController {
     @FXML private javafx.scene.control.TextField matiereField;
     @FXML private javafx.scene.control.TextField valeurField;
     @FXML private javafx.scene.control.ComboBox<String> noteTypeComboBox;
-    @FXML private javafx.scene.control.TextField dateField;
-    @FXML private javafx.scene.control.TextField commentaireField;
     @FXML private javafx.scene.control.Button ajouterNoteButton;
 
     @FXML
@@ -120,7 +145,9 @@ public class NotesController {
             String matiere = matiereField.getText();
             double valeur = Double.parseDouble(valeurField.getText());
             String noteType = noteTypeComboBox.getValue();
-            String date = dateField.getText();
+            String date = datePicker.getValue().toString(); // Format YYYY-MM-DD
+            double coefficient = Double.parseDouble(coefficientField.getText());
+
             String commentaire = commentaireField.getText();
 
             String json = String.format(
@@ -129,6 +156,7 @@ public class NotesController {
             	    + "\"enseignant\": { \"nom\": \"%s\" },"
             	    + "\"matiere\": { \"libelle\": \"%s\" },"
             	    + "\"valeur\": %s,"
+            	    + "\"coefficient\": " + coefficient
             	    + "\"noteType\": \"%s\","
             	    + "\"date\": \"%s\","
             	    + "\"commentaire\": \"%s\""
@@ -167,18 +195,19 @@ public class NotesController {
         }
     }
 
-    // Méthode utilitaire pour vider le formulaire
     private void clearForm() {
         Platform.runLater(() -> {
-            eleveField.clear();
-            enseignantField.clear();
+            eleveComboBox.setValue(null);
+            enseignantComboBox.setValue(null);
             matiereField.clear();
             valeurField.clear();
             noteTypeComboBox.setValue(null);
-            dateField.clear();
+            datePicker.setValue(null);
             commentaireField.clear();
+            coefficientField.clear();
         });
     }
+
     
     private void showAlert(AlertType type, String message) {
         Alert alert = new Alert(type);
@@ -225,5 +254,53 @@ public class NotesController {
                     return null;
                 });
     }
+    
+    private void setupFormFields() {
+        if (role.equals("ENSEIGNANT")) {
+            // Enseignant : champ auto-rempli, non éditable
+            enseignantComboBox.getItems().add(currentUser.getPrenom() + " " + currentUser.getNom());
+            enseignantComboBox.setValue(currentUser.getPrenom() + " " + currentUser.getNom());
+            enseignantComboBox.setDisable(true); // Rendre le champ non éditable
+        } else if (role.equals("ADMIN")) {
+            loadEnseignants(); // Charge la liste des enseignants pour le combo
+        }
+        loadEleves(); // Charge les élèves pour tout le monde
+    }
+    
+    private void chargerUtilisateursDepuisAPI() {
+        try {
+            HttpClient client = HttpClient.newHttpClient();
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create("http://localhost:8080/api/users"))
+                    .header("Authorization", BEARER_TOKEN)
+                    .build();
+
+            HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+
+            ObjectMapper mapper = new ObjectMapper();
+            List<User> users = Arrays.asList(mapper.readValue(response.body(), User[].class));
+
+            // Séparer les enseignants et les élèves par leur rôle
+            List<User> enseignants = users.stream()
+                    .filter(user -> user.getRole().getLibelle().equalsIgnoreCase("ENSEIGNANT"))
+                    .collect(Collectors.toList());
+
+            List<User> eleves = users.stream()
+                    .filter(user -> user.getRole().getLibelle().equalsIgnoreCase("ETUDIANT"))
+                    .collect(Collectors.toList());
+
+            // Ajouter dans les ComboBox (sur le thread JavaFX)
+            Platform.runLater(() -> {
+                enseignantComboBox.setItems(FXCollections.observableArrayList(enseignants));
+                eleveComboBox.setItems(FXCollections.observableArrayList(eleves));
+            });
+
+        } catch (Exception e) {
+            e.printStackTrace(); // à remplacer par une alerte UI si besoin
+        }
+    }
+
+    
+
 
 }

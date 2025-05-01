@@ -10,6 +10,7 @@ public class LocalUser {
     private String adresse;
     private String telephone;
 
+
     // Constructeur
     public LocalUser(String token, int id, String nom, String prenom, String email, String role, String adresse, String telephone) {
         this.token = token;

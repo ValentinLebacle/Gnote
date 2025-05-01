@@ -9,7 +9,7 @@ REM Ajoute tous les fichiers modifiés
 git add .
 
 REM Commit avec un message personnalisé
-git commit -m "JFX | Ajout de la fonctionnalité modification user "
+git commit -m "JFX | Mise à jour de la version"
 
 REM Pousse la branche vers GitHub
 git push origin Gnote_3.5
