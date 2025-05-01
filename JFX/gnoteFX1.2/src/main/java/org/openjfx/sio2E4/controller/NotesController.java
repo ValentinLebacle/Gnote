@@ -10,7 +10,9 @@ import javafx.scene.control.TableView;
 import javafx.scene.control.Alert.AlertType;
 
 import org.openjfx.sio2E4.model.LocalUser;
+import org.openjfx.sio2E4.model.Matiere;
 import org.openjfx.sio2E4.model.Note;
+import org.openjfx.sio2E4.model.NoteType;
 import org.openjfx.sio2E4.model.User;
 import org.openjfx.sio2E4.service.AuthService;
 
@@ -22,6 +24,7 @@ import java.net.http.HttpResponse;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
+import javafx.scene.control.ListCell;
 
 public class NotesController {
 	
@@ -39,28 +42,38 @@ public class NotesController {
     @FXML private TableColumn<Note, String> noteTypeColumn;
     @FXML private TableColumn<Note, String> coefficientColumn;
 
-    /*Formulaire de saisie de note*/
-    @FXML private javafx.scene.control.ComboBox<String> eleveComboBox;
-    @FXML private javafx.scene.control.ComboBox<String> enseignantComboBox;
-    @FXML private javafx.scene.control.DatePicker datePicker;
-    @FXML private javafx.scene.control.TextArea commentaireField;
-    @FXML private javafx.scene.control.TextField coefficientField;
+
 
 
     
     private final String API_URL = "http://localhost:8080/api/notes";
     private final String BEARER_TOKEN = "Bearer " + AuthService.getToken();
 
+    
+    private void showAlert(AlertType type, String message) {
+        Alert alert = new Alert(type);
+        alert.setTitle("Information");
+        alert.setHeaderText(null);
+        alert.setContentText(message);
+        alert.showAndWait();
+    }
+    
+    private void clearForm() {
+        Platform.runLater(() -> {
+            eleveComboBox.setValue(null);
+            enseignantComboBox.setValue(null);
+            matiereComboBox.setValue(null);
+            valeurField.clear();
+            noteTypeComboBox.setValue(null);
+            datePicker.setValue(null);
+            commentaireField.clear();
+            coefficientField.clear();
+        });
+    }
+    
     @FXML
     public void initialize() {
-    	
-    	LocalUser user = AuthService.getCurrentUser();
-    	
-    	String LocalUserRole = user.getRole();
-		String LocalUserNom = user.getNom();
-		String LocalUserPrenom = user.getPrenom();
-		int LocalUserId = user.getId();
-		
+    			
         // Mapping des colonnes
         eleveColumn.setCellValueFactory(data -> new SimpleStringProperty(
             data.getValue().getEleve().getPrenom() + " " + data.getValue().getEleve().getNom())
@@ -95,12 +108,49 @@ public class NotesController {
         	    String.valueOf(data.getValue().getCoefficient()))
         	);
 
+        /*----FORMATTAGE DES COMBOBOX----*/
+       
+        noteTypeComboBox.setCellFactory(lv -> new ListCell<NoteType>() {
+            @Override
+            protected void updateItem(NoteType item, boolean empty) {
+                super.updateItem(item, empty);
+                // Affiche le libellé ou "vide" si l'élément est null ou la cellule vide
+                setText(empty || item == null ? null : item.getLibelle());
+            }
+        });
+        noteTypeComboBox.setButtonCell(noteTypeComboBox.getCellFactory().call(null)); // Rendu du bouton du ComboBox
 
+        eleveComboBox.setCellFactory(lv -> new ListCell<User>() {
+            @Override
+            protected void updateItem(User item, boolean empty) {
+                super.updateItem(item, empty);
+                setText(empty || item == null ? null : item.getPrenom() + " " + item.getNom());
+            }
+        });
+        eleveComboBox.setButtonCell(eleveComboBox.getCellFactory().call(null)); // Rendu du bouton du ComboBox
+
+
+        enseignantComboBox.setCellFactory(lv -> new ListCell<User>() {
+            @Override
+            protected void updateItem(User item, boolean empty) {
+                super.updateItem(item, empty);
+                setText(empty || item == null ? null : item.getPrenom() + " " + item.getNom());
+            }
+        });
+        enseignantComboBox.setButtonCell(enseignantComboBox.getCellFactory().call(null)); // Rendu du bouton du ComboBox
+
+     // Chargement des données du tableaus
         fetchNotes();
-        setupFormFields();
-        chargerUtilisateursDepuisAPI();
+        
+     // Chargement des données du formulaire
+        fetchUsers();
+        fetchMatieres();
+        fetchNoteTypes();
+
     }
 
+
+    
     private void fetchNotes() {
         HttpClient client = HttpClient.newHttpClient();
         HttpRequest request = HttpRequest.newBuilder()
@@ -129,40 +179,55 @@ public class NotesController {
     }
     
     
-    @FXML private javafx.scene.control.TextField eleveField;
-    @FXML private javafx.scene.control.TextField enseignantField;
-    @FXML private javafx.scene.control.TextField matiereField;
+
+
+
+    /*Formulaire de saisie de note*/
     @FXML private javafx.scene.control.TextField valeurField;
-    @FXML private javafx.scene.control.ComboBox<String> noteTypeComboBox;
+    @FXML private javafx.scene.control.TextField coefficientField;
+    @FXML private javafx.scene.control.TextArea commentaireField;
+    
+    @FXML private javafx.scene.control.ComboBox<User> eleveComboBox;
+    @FXML private javafx.scene.control.ComboBox<User> enseignantComboBox;
+    @FXML private javafx.scene.control.ComboBox<Matiere> matiereComboBox;
+    @FXML private javafx.scene.control.ComboBox<NoteType> noteTypeComboBox;
+    
+    @FXML private javafx.scene.control.DatePicker datePicker;
+    
     @FXML private javafx.scene.control.Button ajouterNoteButton;
+
 
     @FXML
     private void ajouterNote() {
         try {
             // Récupérer les données du formulaire
-            String eleve = eleveField.getText();
-            String enseignant = enseignantField.getText();
-            String matiere = matiereField.getText();
-            double valeur = Double.parseDouble(valeurField.getText());
-            String noteType = noteTypeComboBox.getValue();
-            String date = datePicker.getValue().toString(); // Format YYYY-MM-DD
-            double coefficient = Double.parseDouble(coefficientField.getText());
+        	User eleve = eleveComboBox.getValue();
+        	User enseignant = enseignantComboBox.getValue();
+        	Matiere matiere = matiereComboBox.getValue();
+        	NoteType noteType = noteTypeComboBox.getValue();
 
-            String commentaire = commentaireField.getText();
+        	double valeur = Double.parseDouble(valeurField.getText());
+        	double coefficient = Double.parseDouble(coefficientField.getText());
+        	String date = datePicker.getValue().toString();
+        	String commentaire = commentaireField.getText();
 
-            String json = String.format(
-            	    "{"
-            	    + "\"eleve\": { \"nom\": \"%s\" },"
-            	    + "\"enseignant\": { \"nom\": \"%s\" },"
-            	    + "\"matiere\": { \"libelle\": \"%s\" },"
-            	    + "\"valeur\": %s,"
-            	    + "\"coefficient\": " + coefficient
-            	    + "\"noteType\": \"%s\","
-            	    + "\"date\": \"%s\","
-            	    + "\"commentaire\": \"%s\""
-            	    + "}",
-            	    eleve, enseignant, matiere, valeur, noteType, date, commentaire
-            	);
+        	String json = String.format(
+        	    "{"
+        	        + "\"eleve\": { \"id\": %d },"
+        	        + "\"enseignant\": { \"id\": %d },"
+        	        + "\"matiere\": { \"id\": %d },"
+        	        + "\"coefficient\": %s,"
+        	        + "\"valeur\": %s,"
+        	        + "\"noteType\": { \"id\": %d },"
+        	        + "\"commentaire\": \"%s\","
+        	        + "\"date\": \"%s\""
+        	    + "}",
+        	    eleve.getId(), enseignant.getId(), matiere.getId(),
+        	    coefficient, valeur, noteType.getId(),
+        	    commentaire, date
+        	);
+
+
 
 
 
@@ -195,27 +260,10 @@ public class NotesController {
         }
     }
 
-    private void clearForm() {
-        Platform.runLater(() -> {
-            eleveComboBox.setValue(null);
-            enseignantComboBox.setValue(null);
-            matiereField.clear();
-            valeurField.clear();
-            noteTypeComboBox.setValue(null);
-            datePicker.setValue(null);
-            commentaireField.clear();
-            coefficientField.clear();
-        });
-    }
+    
 
     
-    private void showAlert(AlertType type, String message) {
-        Alert alert = new Alert(type);
-        alert.setTitle("Information");
-        alert.setHeaderText(null);
-        alert.setContentText(message);
-        alert.showAndWait();
-    }
+    
     
     @FXML
     private void handleDeleteNote() {
@@ -255,52 +303,176 @@ public class NotesController {
                 });
     }
     
-    private void setupFormFields() {
-        if (role.equals("ENSEIGNANT")) {
-            // Enseignant : champ auto-rempli, non éditable
-            enseignantComboBox.getItems().add(currentUser.getPrenom() + " " + currentUser.getNom());
-            enseignantComboBox.setValue(currentUser.getPrenom() + " " + currentUser.getNom());
-            enseignantComboBox.setDisable(true); // Rendre le champ non éditable
-        } else if (role.equals("ADMIN")) {
-            loadEnseignants(); // Charge la liste des enseignants pour le combo
-        }
-        loadEleves(); // Charge les élèves pour tout le monde
-    }
     
-    private void chargerUtilisateursDepuisAPI() {
+    
+    private void fetchUsers() {
+        HttpClient client = HttpClient.newHttpClient();
+        HttpRequest request = HttpRequest.newBuilder()
+            .uri(URI.create("http://localhost:8080/api/users"))
+            .header("Authorization", BEARER_TOKEN)
+            .GET()
+            .build();
+
+        client.sendAsync(request, HttpResponse.BodyHandlers.ofString())
+            .thenApply(HttpResponse::body)
+            .thenAccept(this::parseUsers)
+            .exceptionally(e -> {
+                e.printStackTrace();
+                return null;
+            });
+    }
+
+    private void parseUsers(String responseBody) {
+        LocalUser user = AuthService.getCurrentUser();
+        ObjectMapper mapper = new ObjectMapper();
         try {
-            HttpClient client = HttpClient.newHttpClient();
-            HttpRequest request = HttpRequest.newBuilder()
-                    .uri(URI.create("http://localhost:8080/api/users"))
-                    .header("Authorization", BEARER_TOKEN)
-                    .build();
+            List<User> users = Arrays.asList(mapper.readValue(responseBody, User[].class));
 
-            HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
-
-            ObjectMapper mapper = new ObjectMapper();
-            List<User> users = Arrays.asList(mapper.readValue(response.body(), User[].class));
-
-            // Séparer les enseignants et les élèves par leur rôle
-            List<User> enseignants = users.stream()
-                    .filter(user -> user.getRole().getLibelle().equalsIgnoreCase("ENSEIGNANT"))
-                    .collect(Collectors.toList());
-
+            // Filtrer les utilisateurs par rôle
             List<User> eleves = users.stream()
-                    .filter(user -> user.getRole().getLibelle().equalsIgnoreCase("ETUDIANT"))
-                    .collect(Collectors.toList());
+                .filter(u -> "ETUDIANT".equalsIgnoreCase(u.getRole().getLibelle()))
+                .collect(Collectors.toList());
 
-            // Ajouter dans les ComboBox (sur le thread JavaFX)
+            List<User> enseignants = users.stream()
+                .filter(u -> "ENSEIGNANT".equalsIgnoreCase(u.getRole().getLibelle()))
+                .collect(Collectors.toList());
+
+            // Mettre à jour les ComboBox dans le thread JavaFX
             Platform.runLater(() -> {
-                enseignantComboBox.setItems(FXCollections.observableArrayList(enseignants));
-                eleveComboBox.setItems(FXCollections.observableArrayList(eleves));
+                // Mettre les utilisateurs dans les ComboBox
+                eleveComboBox.getItems().setAll(eleves);
+                enseignantComboBox.getItems().setAll(enseignants);
+
+                // Personnaliser l'affichage des ComboBox pour afficher le nom complet
+                enseignantComboBox.setCellFactory(lv -> new ListCell<User>() {
+                    @Override
+                    protected void updateItem(User item, boolean empty) {
+                        super.updateItem(item, empty);
+                        setText(empty || item == null ? null : item.getPrenom() + " " + item.getNom());
+                    }
+                });
+
+                eleveComboBox.setCellFactory(lv -> new ListCell<User>() {
+                    @Override
+                    protected void updateItem(User item, boolean empty) {
+                        super.updateItem(item, empty);
+                        setText(empty || item == null ? null : item.getPrenom() + " " + item.getNom());
+                    }
+                });
+
+                // Rendre l'affichage correct pour le bouton du ComboBox (afficher le nom complet)
+                enseignantComboBox.setButtonCell(enseignantComboBox.getCellFactory().call(null));
+                eleveComboBox.setButtonCell(eleveComboBox.getCellFactory().call(null));
+
+                // Si l'utilisateur est un enseignant connecté, sélectionner son nom dans le ComboBox
+                if ("ENSEIGNANT".equalsIgnoreCase(user.getRole())) {
+                    // Trouver l'objet User correspondant à l'enseignant
+                    User enseignant = enseignants.stream()
+                        .filter(u -> (u.getPrenom() + " " + u.getNom()).equals(user.getPrenom() + " " + user.getNom()))
+                        .findFirst()
+                        .orElse(null);
+
+                    if (enseignant != null) {
+                        enseignantComboBox.setValue(enseignant);
+                        enseignantComboBox.setDisable(true);
+                    }
+                }
             });
 
-        } catch (Exception e) {
-            e.printStackTrace(); // à remplacer par une alerte UI si besoin
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
 
-    
+
+
+    private void fetchMatieres() {
+        HttpClient client = HttpClient.newHttpClient();
+        HttpRequest request = HttpRequest.newBuilder()
+            .uri(URI.create("http://localhost:8080/api/matieres"))
+            .header("Authorization", BEARER_TOKEN)
+            .GET()
+            .build();
+
+        client.sendAsync(request, HttpResponse.BodyHandlers.ofString())
+            .thenApply(HttpResponse::body)
+            .thenAccept(this::parseMatieres)
+            .exceptionally(e -> {
+                e.printStackTrace();
+                return null;
+            });
+    }
+
+    private void parseMatieres(String responseBody) {
+        ObjectMapper mapper = new ObjectMapper();
+        try {
+            List<Matiere> matieres = Arrays.asList(mapper.readValue(responseBody, Matiere[].class));
+
+            Platform.runLater(() -> {
+                // Ajouter les objets Matiere directement au ComboBox
+                matiereComboBox.getItems().setAll(matieres);
+
+                // Afficher uniquement le libellé dans la liste déroulante
+                matiereComboBox.setCellFactory(lv -> new ListCell<Matiere>() {
+                    @Override
+                    protected void updateItem(Matiere item, boolean empty) {
+                        super.updateItem(item, empty);
+                        setText(empty || item == null ? null : item.getLibelle());
+                    }
+                });
+
+                // Rendu du bouton du ComboBox
+                matiereComboBox.setButtonCell(matiereComboBox.getCellFactory().call(null));
+            });
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+
+    private void fetchNoteTypes() {
+        HttpClient client = HttpClient.newHttpClient();
+        HttpRequest request = HttpRequest.newBuilder()
+            .uri(URI.create("http://localhost:8080/api/notes/type"))
+            .header("Authorization", BEARER_TOKEN)
+            .GET()
+            .build();
+
+        client.sendAsync(request, HttpResponse.BodyHandlers.ofString())
+            .thenApply(HttpResponse::body)
+            .thenAccept(this::parseNoteTypes)
+            .exceptionally(e -> {
+                e.printStackTrace();
+                return null;
+            });
+    }
+
+    private void parseNoteTypes(String responseBody) {
+        ObjectMapper mapper = new ObjectMapper();
+        try {
+            List<NoteType> types = Arrays.asList(mapper.readValue(responseBody, NoteType[].class));
+
+            Platform.runLater(() -> {
+                // Ajouter les objets NoteType directement au ComboBox
+                noteTypeComboBox.getItems().setAll(types);
+
+                // Afficher uniquement le libellé dans la liste déroulante
+                noteTypeComboBox.setCellFactory(lv -> new ListCell<NoteType>() {
+                    @Override
+                    protected void updateItem(NoteType item, boolean empty) {
+                        super.updateItem(item, empty);
+                        setText(empty || item == null ? null : item.getLibelle());
+                    }
+                });
+
+                // Rendu du bouton du ComboBox
+                noteTypeComboBox.setButtonCell(noteTypeComboBox.getCellFactory().call(null));
+            });
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
 
 
 }

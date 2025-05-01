@@ -82,7 +82,4 @@ public class MatiereAssociationController {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(EntityModel.of(errorResponse));
         }
     }
-    
-    
-
 }

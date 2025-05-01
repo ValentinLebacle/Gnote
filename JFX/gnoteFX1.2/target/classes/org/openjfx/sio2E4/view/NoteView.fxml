@@ -32,38 +32,39 @@
         style="-fx-font-size: 24px; -fx-font-weight: bold; -fx-alignment: top-left;" />
 
     <GridPane hgap="10" vgap="10">
+
         <Label text="Élève :" GridPane.rowIndex="0" GridPane.columnIndex="0" />
         <ComboBox fx:id="eleveComboBox" GridPane.rowIndex="0" GridPane.columnIndex="1" />
 
         <Label text="Enseignant :" GridPane.rowIndex="1" GridPane.columnIndex="0" />
         <ComboBox fx:id="enseignantComboBox" GridPane.rowIndex="1" GridPane.columnIndex="1" />
 
-
         <Label text="Matière :" GridPane.rowIndex="2" GridPane.columnIndex="0" />
-        <TextField fx:id="matiereField" GridPane.rowIndex="2" GridPane.columnIndex="1" />
+        <ComboBox fx:id="matiereComboBox" GridPane.rowIndex="2" GridPane.columnIndex="1" />
 
         <Label text="Note (valeur) :" GridPane.rowIndex="3" GridPane.columnIndex="0" />
         <TextField fx:id="valeurField" GridPane.rowIndex="3" GridPane.columnIndex="1" />
 
-        <Label text="Coef (valeur) :" GridPane.rowIndex="3" GridPane.columnIndex="0" />
-        <TextField fx:id="coefficientField" />
+        <Label text="Coef (valeur) :" GridPane.rowIndex="4" GridPane.columnIndex="0" />
+        <TextField fx:id="coefficientField" GridPane.rowIndex="4" GridPane.columnIndex="1" />
 
-        <Label text="Type de Note :" GridPane.rowIndex="4" GridPane.columnIndex="0" />
-        <ComboBox fx:id="noteTypeComboBox" prefWidth="200" GridPane.rowIndex="4"
+        <Label text="Type de Note :" GridPane.rowIndex="5" GridPane.columnIndex="0" />
+        <ComboBox fx:id="noteTypeComboBox" prefWidth="200" GridPane.rowIndex="5"
             GridPane.columnIndex="1" />
 
-        <Label text="Date :" GridPane.rowIndex="5" GridPane.columnIndex="0" />
-        <DatePicker fx:id="datePicker" />
+        <Label text="Date :" GridPane.rowIndex="6" GridPane.columnIndex="0" />
+        <DatePicker fx:id="datePicker" GridPane.rowIndex="6" GridPane.columnIndex="1" />
 
-        <Label text="Commentaire :" GridPane.rowIndex="6" GridPane.columnIndex="0" />
-        <TextArea fx:id="commentaireField" prefRowCount="3" />
-
+        <Label text="Commentaire :" GridPane.rowIndex="7" GridPane.columnIndex="0" />
+        <TextArea fx:id="commentaireField" prefRowCount="3" GridPane.rowIndex="7"
+            GridPane.columnIndex="1" />
 
         <Button text="Ajouter la Note"
             fx:id="ajouterNoteButton"
             onAction="#ajouterNote"
-            GridPane.rowIndex="7" GridPane.columnIndex="1"
+            GridPane.rowIndex="8" GridPane.columnIndex="1"
             style="-fx-background-color: #4CAF50; -fx-text-fill: white;" />
     </GridPane>
+
 
 </VBox>
