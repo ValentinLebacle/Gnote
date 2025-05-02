@@ -7,6 +7,13 @@ public class Matiere {
     private int id;
     private String libelle;
 
+    
+    @Override
+    public String toString() {
+        return this.libelle;
+    }
+
+    
     public Matiere() {
     }
 

@@ -26,6 +26,7 @@
     </TableView>
     <HBox spacing="10">
         <Button text="Supprimer" onAction="#handleDeleteNote" />
+        <Button text="Modifier" onAction="#handleUpdateNote" />
     </HBox>
     <!-- Formulaire d'ajout d'une note -->
     <Label text="Ajouter une Note"

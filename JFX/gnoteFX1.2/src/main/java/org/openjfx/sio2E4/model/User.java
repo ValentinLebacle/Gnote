@@ -11,6 +11,11 @@ public class User {
     private String adresse;
     private String telephone;
     private Role role;
+    
+    @Override
+    public String toString() {
+        return this.prenom + " " + this.nom;
+    }
 
     public User() {
         // Constructeur par défaut nécessaire pour Jackson

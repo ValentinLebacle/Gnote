@@ -7,13 +7,9 @@ import javafx.fxml.FXML;
 import javafx.scene.control.Alert;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
-import javafx.scene.control.TextArea;
-import javafx.scene.control.TextField;
 import javafx.scene.layout.VBox;
 import javafx.scene.control.Alert.AlertType;
 import javafx.scene.control.ButtonType;
-import javafx.scene.control.ComboBox;
-import javafx.scene.control.DatePicker;
 import javafx.scene.control.Dialog;
 import javafx.scene.control.DialogPane;
 
@@ -478,6 +474,7 @@ public class NotesController {
             return;
         }
 
+        // Créer un dialogue de type alert personnalisé
         Dialog<ButtonType> dialog = new Dialog<>();
         dialog.setTitle("Modifier une note");
 
@@ -485,41 +482,58 @@ public class NotesController {
         dialog.setDialogPane(dialogPane);
         dialog.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
 
-        // 🆕 Création de nouveaux champs indépendants
-        ComboBox<User> eleveBox = new ComboBox<>(eleveComboBox.getItems());
-        ComboBox<User> enseignantBox = new ComboBox<>(enseignantComboBox.getItems());
-        ComboBox<Matiere> matiereBox = new ComboBox<>(matiereComboBox.getItems());
-        ComboBox<NoteType> noteTypeBox = new ComboBox<>(noteTypeComboBox.getItems());
+        // Réutilisation du formulaire (même contenu que celui d'ajout, mais dans un conteneur)
+        VBox form = new VBox(10);
+        form.getChildren().addAll(
+                eleveComboBox,
+                enseignantComboBox,
+                matiereComboBox,
+                valeurField,
+                coefficientField,
+                datePicker,
+                noteTypeComboBox,
+                commentaireField
+        );
+        dialogPane.setContent(form);
 
-        TextField valeurFieldLocal = new TextField();
-        TextField coefficientFieldLocal = new TextField();
-        TextArea commentaireFieldLocal = new TextArea();
-        DatePicker datePickerLocal = new DatePicker();
-
-        // Préremplissage
-        eleveBox.setValue(selectedNote.getEleve());
-        enseignantBox.setValue(selectedNote.getEnseignant());
-        matiereBox.setValue(selectedNote.getMatiere());
-        valeurFieldLocal.setText(String.valueOf(selectedNote.getValeur()));
-        coefficientFieldLocal.setText(String.valueOf(selectedNote.getCoefficient()));
-        datePickerLocal.setValue(LocalDate.parse(selectedNote.getDate()));
-        commentaireFieldLocal.setText(selectedNote.getCommentaire());
-
-        for (NoteType nt : noteTypeBox.getItems()) {
-            if (nt.getLibelle().equalsIgnoreCase(selectedNote.getNoteType())) {
-                noteTypeBox.setValue(nt);
+        // Préremplissage du formulaire avec les données de la note sélectionnée
+        eleveComboBox.setValue(selectedNote.getEleve());
+        enseignantComboBox.setValue(selectedNote.getEnseignant());
+        matiereComboBox.setValue(selectedNote.getMatiere());
+        valeurField.setText(String.valueOf(selectedNote.getValeur()));
+        coefficientField.setText(String.valueOf(selectedNote.getCoefficient()));
+        datePicker.setValue(LocalDate.parse(selectedNote.getDate()));
+        String typeNom = selectedNote.getNoteType(); // Ex: "Contrôle"
+        for (NoteType nt : noteTypeComboBox.getItems()) {
+            if (nt.getLibelle().equalsIgnoreCase(typeNom)) {
+                noteTypeComboBox.setValue(nt);
                 break;
             }
         }
 
-        VBox form = new VBox(10, eleveBox, enseignantBox, matiereBox, valeurFieldLocal, coefficientFieldLocal, datePickerLocal, noteTypeBox, commentaireFieldLocal);
-        dialogPane.setContent(form);
+        commentaireField.setText(selectedNote.getCommentaire());
 
+        // Attendre le retour utilisateur
         dialog.showAndWait().ifPresent(response -> {
             if (response == ButtonType.OK) {
-                try {
-                    String json = String.format(
-                        "{"
+                updateNote(selectedNote.getId());
+            }
+        });
+    }
+    private void updateNote(int noteId) {
+        try {
+            User eleve = eleveComboBox.getValue();
+            User enseignant = enseignantComboBox.getValue();
+            Matiere matiere = matiereComboBox.getValue();
+            NoteType noteType = noteTypeComboBox.getValue();
+
+            double valeur = Double.parseDouble(valeurField.getText());
+            double coefficient = Double.parseDouble(coefficientField.getText());
+            String date = datePicker.getValue().toString();
+            String commentaire = commentaireField.getText();
+
+            String json = String.format(
+                    "{"
                             + "\"eleve\": { \"id\": %d },"
                             + "\"enseignant\": { \"id\": %d },"
                             + "\"matiere\": { \"id\": %d },"
@@ -528,48 +542,40 @@ public class NotesController {
                             + "\"noteType\": { \"id\": %d },"
                             + "\"commentaire\": \"%s\","
                             + "\"date\": \"%s\""
-                        + "}",
-                        eleveBox.getValue().getId(),
-                        enseignantBox.getValue().getId(),
-                        matiereBox.getValue().getId(),
-                        Double.parseDouble(coefficientFieldLocal.getText()),
-                        Double.parseDouble(valeurFieldLocal.getText()),
-                        noteTypeBox.getValue().getId(),
-                        commentaireFieldLocal.getText(),
-                        datePickerLocal.getValue().toString()
-                    );
+                            + "}",
+                    eleve.getId(), enseignant.getId(), matiere.getId(),
+                    coefficient, valeur, noteType.getId(),
+                    commentaire, date
+            );
 
-                    // Appel API PUT
-                    HttpClient client = HttpClient.newHttpClient();
-                    HttpRequest request = HttpRequest.newBuilder()
-                            .uri(URI.create(API_URL + "/" + selectedNote.getId()))
-                            .header("Authorization", BEARER_TOKEN)
-                            .header("Content-Type", "application/json")
-                            .PUT(HttpRequest.BodyPublishers.ofString(json))
-                            .build();
+            HttpClient client = HttpClient.newHttpClient();
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(API_URL + "/" + noteId))
+                    .header("Authorization", BEARER_TOKEN)
+                    .header("Content-Type", "application/json")
+                    .PUT(HttpRequest.BodyPublishers.ofString(json))
+                    .build();
 
-                    client.sendAsync(request, HttpResponse.BodyHandlers.ofString())
-                            .thenAccept(resp -> {
-                                if (resp.statusCode() == 200) {
-                                    fetchNotes();
-                                    Platform.runLater(() -> showAlert(Alert.AlertType.INFORMATION, "Note mise à jour avec succès."));
-                                } else {
-                                    Platform.runLater(() -> showAlert(Alert.AlertType.ERROR, "Erreur de mise à jour : " + resp.body()));
-                                }
-                            })
-                            .exceptionally(e -> {
-                                e.printStackTrace();
-                                Platform.runLater(() -> showAlert(Alert.AlertType.ERROR, "Erreur réseau : " + e.getMessage()));
-                                return null;
+            client.sendAsync(request, HttpResponse.BodyHandlers.ofString())
+                    .thenAccept(response -> {
+                        if (response.statusCode() == 200) {
+                            Platform.runLater(() -> {
+                                showAlert(AlertType.INFORMATION, "Note mise à jour avec succès.");
+                                fetchNotes();
+                                clearForm();
                             });
-
-                } catch (Exception e) {
-                    showAlert(Alert.AlertType.ERROR, "Erreur dans le formulaire : " + e.getMessage());
-                    e.printStackTrace();
-                }
-            }
-        });
+                        } else {
+                            Platform.runLater(() -> showAlert(AlertType.ERROR, "Erreur lors de la mise à jour."));
+                        }
+                    })
+                    .exceptionally(e -> {
+                        e.printStackTrace();
+                        Platform.runLater(() -> showAlert(AlertType.ERROR, "Erreur réseau : " + e.getMessage()));
+                        return null;
+                    });
+        } catch (Exception e) {
+            e.printStackTrace();
+            showAlert(AlertType.ERROR, "Veuillez vérifier les données saisies.");
+        }
     }
-
-    
 }
