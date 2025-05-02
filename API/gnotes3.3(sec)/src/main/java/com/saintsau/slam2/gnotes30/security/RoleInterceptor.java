@@ -37,7 +37,7 @@ public class RoleInterceptor implements HandlerInterceptor {
 		String requestURI = request.getRequestURI();
 
 		// Users
-		if (requestURI.startsWith("/api/users") && !role.equals("ADMIN")) {
+		if (requestURI.startsWith("/api/users") && !(role.equals("ENSEIGNANT") || role.equals("ADMIN"))) {
 			response.sendError(HttpServletResponse.SC_FORBIDDEN, "Accès refusé : besoin du rôle ADMIN");
 			return false;
 		}

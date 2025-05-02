@@ -66,6 +66,9 @@
             GridPane.rowIndex="8" GridPane.columnIndex="1"
             style="-fx-background-color: #4CAF50; -fx-text-fill: white;" />
     </GridPane>
+    <!-- Label pour afficher l'élève avec la meilleure moyenne -->
+    <Label fx:id="meilleurEleveLabel" text="Major de promotion :"
+        style="-fx-font-size: 16px; -fx-font-weight: bold; -fx-alignment: top-left;" />
 
 
 </VBox>

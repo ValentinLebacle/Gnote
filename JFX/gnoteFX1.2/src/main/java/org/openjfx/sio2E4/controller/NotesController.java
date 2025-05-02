@@ -16,6 +16,7 @@ import javafx.scene.control.ComboBox;
 import javafx.scene.control.DatePicker;
 import javafx.scene.control.Dialog;
 import javafx.scene.control.DialogPane;
+import javafx.scene.control.Label;
 
 import org.openjfx.sio2E4.model.LocalUser;
 import org.openjfx.sio2E4.model.Matiere;
@@ -30,8 +31,11 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import javafx.scene.control.ListCell;
 
@@ -55,7 +59,8 @@ public class NotesController {
     private final String API_URL = "http://localhost:8080/api/notes";
     private final String BEARER_TOKEN = "Bearer " + AuthService.getToken();
 
-    
+
+
     private void showAlert(AlertType type, String message) {
         Alert alert = new Alert(type);
         alert.setTitle("Information");
@@ -67,16 +72,32 @@ public class NotesController {
     private void clearForm() {
         Platform.runLater(() -> {
             eleveComboBox.setValue(null);
-            enseignantComboBox.setValue(null);
             matiereComboBox.setValue(null);
             valeurField.clear();
             noteTypeComboBox.setValue(null);
             datePicker.setValue(null);
             commentaireField.clear();
             coefficientField.clear();
+
+            // Si l'utilisateur connecté est un enseignant, on le sélectionne à nouveau
+            if ("ENSEIGNANT".equalsIgnoreCase(currentUser.getRole())) {
+                // On cherche l'enseignant correspondant dans la liste (important si l'objet n'est pas le même en mémoire)
+                User enseignant = enseignantComboBox.getItems().stream()
+                    .filter(u -> u.getId() == currentUser.getId())
+                    .findFirst()
+                    .orElse(null);
+
+                if (enseignant != null) {
+                    enseignantComboBox.setValue(enseignant);
+                    enseignantComboBox.setDisable(true); // on le rend non modifiable
+                }
+            } else {
+                enseignantComboBox.setValue(null);
+                enseignantComboBox.setDisable(false); // autoriser la sélection si ce n’est pas un enseignant
+            }
         });
     }
-    
+
     @FXML
     public void initialize() {
     			
@@ -152,7 +173,6 @@ public class NotesController {
         fetchUsers();
         fetchMatieres();
         fetchNoteTypes();
-
     }
 
 
@@ -172,18 +192,78 @@ public class NotesController {
                 e.printStackTrace();
                 return null;
             });
+        
     }
 
     private void parseNotes(String responseBody) {
         ObjectMapper mapper = new ObjectMapper();
         try {
+        	
+        	
             List<Note> notes = Arrays.asList(mapper.readValue(responseBody, Note[].class));
             Platform.runLater(() -> notesTable.getItems().setAll(notes));
+            
+            eleveAvecMeilleureMoyenne(notes); // Truc nouveau
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
-    
+    @FXML
+    private Label meilleurEleveLabel;  // Le Label qui affichera l'élève avec la meilleure moyenne
+
+    private void eleveAvecMeilleureMoyenne(List<Note> notes) {
+        // Map pour stocker les totaux des valeurs pondérées et des coefficients par élève
+        Map<Integer, Double> totalNotes = new HashMap<>();
+        Map<Integer, Double> totalCoefficients = new HashMap<>();
+
+        // Parcours des notes pour calculer les totaux
+        for (Note note : notes) {
+            int eleveId = note.getEleve().getId();
+            double valeur = note.getValeur();
+            double coefficient = note.getCoefficient();
+
+            // Ajoute la valeur pondérée à l'élève
+            totalNotes.put(eleveId, totalNotes.getOrDefault(eleveId, 0.0) + (valeur * coefficient));
+            totalCoefficients.put(eleveId, totalCoefficients.getOrDefault(eleveId, 0.0) + coefficient);
+        }
+
+        // Calculer la moyenne pondérée pour chaque élève
+        Map<Integer, Double> moyennes = new HashMap<>();
+        for (int eleveId : totalNotes.keySet()) {
+            double moyenne = totalNotes.get(eleveId) / totalCoefficients.get(eleveId);
+            moyennes.put(eleveId, moyenne);
+        }
+
+        // Trouver l'élève avec la meilleure moyenne
+        int meilleurEleveId = -1;
+        double meilleureMoyenne = -1;
+        for (Map.Entry<Integer, Double> entry : moyennes.entrySet()) {
+            if (entry.getValue() > meilleureMoyenne) {
+                meilleureMoyenne = entry.getValue();
+                meilleurEleveId = entry.getKey();
+            }
+        }
+
+        // Trouver l'élève correspondant à l'ID avec la meilleure moyenne
+        User meilleurEleve = null;
+        for (Note note : notes) {
+            if (note.getEleve().getId() == meilleurEleveId) {
+                meilleurEleve = note.getEleve();
+                break;
+            }
+        }
+
+        // Mettre à jour le Label avec l'élève ayant la meilleure moyenne
+        if (meilleurEleve != null) {
+            String texte = "Major de promotion : "
+                           + meilleurEleve.getPrenom() + " " + meilleurEleve.getNom()
+                           + " avec une moyenne de " + String.format("%.2f", meilleureMoyenne);
+
+            // Mettre à jour le Label dans l'interface utilisateur
+            Platform.runLater(() -> meilleurEleveLabel.setText(texte));
+        }
+    }
+
 
 
     /*Formulaire de saisie de note*/
@@ -478,6 +558,16 @@ public class NotesController {
             return;
         }
 
+        LocalUser currentUser = AuthService.getCurrentUser();
+        String userRole = currentUser.getRole();
+
+        // Empêcher un enseignant de modifier une note qui ne lui appartient pas
+        if ("ENSEIGNANT".equalsIgnoreCase(userRole)
+                && selectedNote.getEnseignant().getId() != currentUser.getId()) {
+            showAlert(Alert.AlertType.ERROR, "Vous ne pouvez modifier que vos propres notes.");
+            return;
+        }
+
         Dialog<ButtonType> dialog = new Dialog<>();
         dialog.setTitle("Modifier une note");
 
@@ -485,7 +575,7 @@ public class NotesController {
         dialog.setDialogPane(dialogPane);
         dialog.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
 
-        // 🆕 Création de nouveaux champs indépendants
+        // Création de nouveaux champs indépendants
         ComboBox<User> eleveBox = new ComboBox<>(eleveComboBox.getItems());
         ComboBox<User> enseignantBox = new ComboBox<>(enseignantComboBox.getItems());
         ComboBox<Matiere> matiereBox = new ComboBox<>(matiereComboBox.getItems());
@@ -505,6 +595,7 @@ public class NotesController {
         datePickerLocal.setValue(LocalDate.parse(selectedNote.getDate()));
         commentaireFieldLocal.setText(selectedNote.getCommentaire());
 
+        // Sélectionner le type de note
         for (NoteType nt : noteTypeBox.getItems()) {
             if (nt.getLibelle().equalsIgnoreCase(selectedNote.getNoteType())) {
                 noteTypeBox.setValue(nt);
@@ -512,7 +603,13 @@ public class NotesController {
             }
         }
 
-        VBox form = new VBox(10, eleveBox, enseignantBox, matiereBox, valeurFieldLocal, coefficientFieldLocal, datePickerLocal, noteTypeBox, commentaireFieldLocal);
+        // 🔒 Désactiver le champ enseignant si c'est un enseignant connecté
+        if ("ENSEIGNANT".equalsIgnoreCase(userRole)) {
+            enseignantBox.setDisable(true);
+        }
+
+        VBox form = new VBox(10, eleveBox, enseignantBox, matiereBox, valeurFieldLocal,
+                             coefficientFieldLocal, datePickerLocal, noteTypeBox, commentaireFieldLocal);
         dialogPane.setContent(form);
 
         dialog.showAndWait().ifPresent(response -> {
@@ -539,7 +636,6 @@ public class NotesController {
                         datePickerLocal.getValue().toString()
                     );
 
-                    // Appel API PUT
                     HttpClient client = HttpClient.newHttpClient();
                     HttpRequest request = HttpRequest.newBuilder()
                             .uri(URI.create(API_URL + "/" + selectedNote.getId()))
@@ -570,6 +666,7 @@ public class NotesController {
             }
         });
     }
+
 
     
 }

@@ -16,6 +16,7 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
+import static org.mockito.ArgumentMatchers.any;
 
 @ExtendWith(MockitoExtension.class)
 class UserServiceTest {
@@ -37,6 +38,7 @@ class UserServiceTest {
         user.setEmail("jean.dupont@example.com");
         user.setAdresse("123 rue de Paris");
         user.setTelephone("0606060606");
+        user.setPasswordHash("123");
     }
 
     @Test
@@ -68,19 +70,32 @@ class UserServiceTest {
         verify(userRepository, times(1)).findById(1);
     }
 
+
+
     @Test
     void shouldCreateUser() {
         // Arrange
-        when(userRepository.save(user)).thenReturn(user);
+        User inputUser = new User();
+        inputUser.setNom("Martin");
+        inputUser.setPrenom("Paul");
+        inputUser.setEmail("paul.martin@example.com");
+        inputUser.setAdresse("456 rue Lyon");
+        inputUser.setTelephone("0707070707");
+        inputUser.setPasswordHash("123");
+
+        when(userRepository.save(any(User.class))).thenReturn(inputUser);
 
         // Act
-        User savedUser = userService.createUser(user);
+        User savedUser = userService.createUser(inputUser);
 
         // Assert
         assertNotNull(savedUser);
-        assertEquals("jean.dupont@example.com", savedUser.getEmail());
-        verify(userRepository, times(1)).save(user);
+        assertEquals("paul.martin@example.com", savedUser.getEmail());
+        assertEquals("Martin", savedUser.getNom());
+        verify(userRepository, times(1)).save(any(User.class));
     }
+
+
 
     @Test
     void shouldUpdateUser() {
