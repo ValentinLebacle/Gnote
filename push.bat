@@ -6,7 +6,7 @@ git checkout -b Gnote_3.5
 
 git add .
 
-git commit -m "JFX | Ajout du formulaire de note"
+git commit -m "JFX | Ajout du formulaire modification de note"
 
 git push origin Gnote_3.5
 
