@@ -7,9 +7,11 @@ import javafx.scene.control.*;
 import javafx.scene.control.Alert.AlertType;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.StackPane;
+import javafx.stage.Stage;
 import javafx.fxml.FXMLLoader;
 import javafx.geometry.Insets;
 import javafx.scene.Parent;
+import javafx.scene.Scene;
 
 import org.openjfx.sio2E4.model.Role;
 import org.openjfx.sio2E4.model.User;
@@ -42,8 +44,6 @@ public class UsersController {
 	@FXML
 	private TableColumn<User, String> roleColumn;
 
-	@FXML
-	private StackPane contentArea; // Zone pour afficher la UserCardView
 
 	private final String API_URL = "http://localhost:8080/api/users";
 	private final String BEARER_TOKEN = "Bearer " + AuthService.getToken();
@@ -51,6 +51,26 @@ public class UsersController {
 	@FXML
 	private ComboBox<String> roleComboBox;
 
+	
+	private void showAlert(AlertType type, String message) {
+		Alert alert = new Alert(type);
+		alert.setTitle("Information");
+		alert.setHeaderText(null);
+		alert.setContentText(message);
+		alert.showAndWait();
+	}
+
+	private void clearForm() {
+		nomField.clear();
+		prenomField.clear();
+		emailField.clear();
+		adresseField.clear();
+		telephoneField.clear();
+		passwordField.clear();
+		roleComboBox.getSelectionModel().selectFirst();
+	}
+	
+	
 	@FXML
 	public void initialize() {
 		roleComboBox.getItems().addAll("ADMIN", "ENSEIGNANT", "ETUDIANT");
@@ -62,29 +82,7 @@ public class UsersController {
 		adresseColumn.setCellValueFactory(data -> new SimpleStringProperty(data.getValue().getAdresse()));
 		roleColumn.setCellValueFactory(data -> new SimpleStringProperty(data.getValue().getRole().getLibelle()));
 
-		// On rend la colonne "Nom" cliquable et ajoutons un bouton pour chaque
-		// utilisateur
-		nomColumn.setCellFactory(column -> {
-			return new TableCell<User, String>() {
-				private final Button button = new Button();
-
-				@Override
-				protected void updateItem(String item, boolean empty) {
-					super.updateItem(item, empty);
-					if (empty) {
-						setGraphic(null);
-					} else {
-						button.setText(item);
-						button.setOnAction(event -> handleShowUserCard(getTableRow().getItem().getId())); // Appel pour
-																											// afficher
-																											// la carte
-																											// utilisateur
-						setGraphic(button);
-					}
-				}
-			};
-		});
-
+		
 		fetchUsers();
 	}
 
@@ -112,25 +110,24 @@ public class UsersController {
 		}
 	}
 
-	// Méthode pour afficher la carte utilisateur
-	private void handleShowUserCard(int userId) {
-		try {
-			// Charger la vue UserCardView
-			FXMLLoader loader = new FXMLLoader(getClass().getResource("/org/openjfx/sio2E4/view/UserCardView.fxml"));
-			Parent userCardRoot = loader.load();
+// -------------------- user Card --------------------
+	private MainLayoutController mainLayoutController;
 
-			// Récupérer le contrôleur de UserCardView et appeler loadUser() avec l'ID
-			UserCardController userCardController = loader.getController();
-			userCardController.loadUser(userId);
-
-			// Remplacer le contenu actuel du StackPane par la carte utilisateur
-			contentArea.getChildren().setAll(userCardRoot);
-
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
+	public void setMainLayoutController(MainLayoutController controller) {
+	    this.mainLayoutController = controller;
+	}
+	@FXML
+	private void handleShowUserCard() {
+	    User selectedUser = usersTable.getSelectionModel().getSelectedItem();
+	    if (selectedUser != null && mainLayoutController != null) {
+	        mainLayoutController.showUserCard(selectedUser.getId());
+	    }
 	}
 
+	
+	
+	
+	
 	// Info de formulaire
 	@FXML
 	private TextField nomField;
@@ -210,23 +207,7 @@ public class UsersController {
 		}
 	}
 
-	private void showAlert(AlertType type, String message) {
-		Alert alert = new Alert(type);
-		alert.setTitle("Information");
-		alert.setHeaderText(null);
-		alert.setContentText(message);
-		alert.showAndWait();
-	}
 
-	private void clearForm() {
-		nomField.clear();
-		prenomField.clear();
-		emailField.clear();
-		adresseField.clear();
-		telephoneField.clear();
-		passwordField.clear();
-		roleComboBox.getSelectionModel().selectFirst();
-	}
 
 	@FXML
 	private void handleDeleteUser() {

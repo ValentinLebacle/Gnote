@@ -1,5 +1,6 @@
 package org.openjfx.sio2E4.controller;
 
+import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
@@ -125,52 +126,43 @@ public class MainLayoutController {
 	
 //----------------------- User Card -----------------------
 
-    // Méthode appelée lorsque l'utilisateur clique sur le bouton
-    @FXML
-    private void handleShowUserCard() {
-        // Exemple d'ID utilisateur, cela pourrait être dynamique, comme venant d'une liste
-        int userId = 1;  // Remplace ce 1 par l'ID de l'utilisateur à afficher
+	
+	@FXML
+	private void showUsers() {
+	    try {
+	        FXMLLoader loader = new FXMLLoader(getClass().getResource("/org/openjfx/sio2E4/view/UserView.fxml"));
+	        Parent usersRoot = loader.load();
 
-        // Affiche la UserCardView en passant l'ID de l'utilisateur
-        showUserCard(userId);
-    }
+	        UsersController usersController = loader.getController();
+	        usersController.setMainLayoutController(this);
 
-    // Méthode pour afficher la carte utilisateur dans la StackPane
-    private void showUserCard(int userId) {
-        try {
-            // Charger la vue UserCardView
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/org/openjfx/sio2E4/view/UserCardView.fxml"));
-            Parent userCardRoot = loader.load();
+	        contentArea.getChildren().setAll(usersRoot);
+	    } catch (IOException e) {
+	        e.printStackTrace();
+	    }
+	}
 
-            // Récupérer le contrôleur de la UserCardView et appeler loadUser() avec l'ID
-            UserCardController userCardController = loader.getController();
-            userCardController.loadUser(userId);
 
-            // Remplacer le contenu actuel du StackPane par la carte utilisateur
-            contentArea.getChildren().setAll(userCardRoot);
+    
+  //----------------------- User Card -----------------------
 
-        } catch (IOException e) {
-            // Si l'affichage échoue, afficher une alerte
-            Alert alert = new Alert(AlertType.ERROR);
-            alert.setTitle("Erreur");
-            alert.setHeaderText("Erreur de chargement");
-            alert.setContentText("Une erreur est survenue lors du chargement de la carte utilisateur.");
-            alert.showAndWait();
-        }
-    }
+	public void showUserCard(int userId) {
+	    Platform.runLater(() -> {
+	        try {
+	            FXMLLoader loader = new FXMLLoader(getClass().getResource("/org/openjfx/sio2E4/view/UserCardView.fxml"));
+	            Parent userCardRoot = loader.load();
 
-    @FXML
-    private void showUsers() {
-        try {
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/org/openjfx/sio2E4/view/UserView.fxml"));
-            Parent usersRoot = loader.load();
+	            UserCardController controller = loader.getController();
+	            controller.loadUser(userId); // charge les infos de l'utilisateur
 
-            // Insère la vue des utilisateurs dans une zone spécifique
-            contentArea.getChildren().setAll(usersRoot);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
+	            contentArea.getChildren().setAll(userCardRoot); // MAJ de l'UI
+	        } catch (IOException e) {
+	            e.printStackTrace();
+	        }
+	    });
+	}
+
+
 
 	
 	

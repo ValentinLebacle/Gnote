@@ -203,11 +203,14 @@ public class NotesController {
             List<Note> notes = Arrays.asList(mapper.readValue(responseBody, Note[].class));
             Platform.runLater(() -> notesTable.getItems().setAll(notes));
             
-            eleveAvecMeilleureMoyenne(notes); // Truc nouveau
+            eleveAvecMeilleureMoyenne(notes);
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
+    
+
+ 	
     @FXML
     private Label meilleurEleveLabel;  // Le Label qui affichera l'élève avec la meilleure moyenne
 

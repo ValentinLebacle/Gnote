@@ -27,7 +27,9 @@
     <HBox spacing="10">
         <Button text="Supprimer" onAction="#handleDeleteUser" />
         <Button text="Modifier" onAction="#handleEditUser" />
+        <Button text="Voir Fiche" onAction="#handleShowUserCard" />
     </HBox>
+    
     
     <!-- Formulaire d'ajout d'utilisateur -->
     <Label text="Formulaire d'ajout d'utilisateur"
@@ -62,6 +64,4 @@
             GridPane.rowIndex="7" GridPane.columnIndex="1"
             style="-fx-background-color: #4CAF50; -fx-text-fill: white;" />
     </GridPane>
-
-
 </VBox>

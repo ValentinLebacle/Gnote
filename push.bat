@@ -2,13 +2,13 @@
 
 cd /d %~dp0
 
-git checkout -b Gnote_3.5
+git checkout -b Gnote_3.6
 
 git add .
 
-git commit -m "JFX | Ajout du major de promotion & API | test unitaire"
+git commit -m "JFX | Finalisation de la page Info User"
 
-git push origin Gnote_3.5
+git push origin Gnote_3.6
 
-echo La branche Gnote_3.5 a été mise à jour et envoyée vers GitHub avec succès.
+echo La branche Gnote_3.6 a été mise à jour et envoyée vers GitHub avec succès.
 pause

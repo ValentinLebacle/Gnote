@@ -3,9 +3,9 @@
 -- https://www.phpmyadmin.net/
 --
 -- Hôte : 127.0.0.1:3306
--- Généré le : mer. 26 mars 2025 à 15:23
+-- Généré le : sam. 03 mai 2025 à 17:49
 -- Version du serveur : 8.0.31
--- Version de PHP : 7.4.33
+-- Version de PHP : 8.2.0
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 START TRANSACTION;
@@ -21,60 +21,6 @@ SET time_zone = "+00:00";
 -- Base de données : `newgnotesec`
 --
 
-DELIMITER $$
---
--- Procédures
---
-DROP PROCEDURE IF EXISTS `reset`$$
-CREATE DEFINER=`root`@`localhost` PROCEDURE `reset` ()   BEGIN
-    -- Désactiver temporairement les contraintes de clé étrangère
-    SET FOREIGN_KEY_CHECKS = 0;
-
-    -- Vider les tables et réinitialiser les IDs
-    TRUNCATE TABLE `newgnotesec`.`note`;
-    TRUNCATE TABLE `newgnotesec`.`matiere_association`;
-    TRUNCATE TABLE `newgnotesec`.`user`;
-    TRUNCATE TABLE `newgnotesec`.`role`;
-    TRUNCATE TABLE `newgnotesec`.`matiere`;
-    TRUNCATE TABLE `newgnotesec`.`note_type`;
-
-    -- Réactiver les contraintes de clé étrangère
-    SET FOREIGN_KEY_CHECKS = 1;
-
-    -- Réinsérer des données d'entraînement
-    INSERT INTO `newgnotesec`.`role` (`role_id`, `role_libelle`) VALUES 
-        (1, 'ADMIN'),
-        (2, 'Enseignant'),
-        (3, 'Élève');
-
-    INSERT INTO `newgnotesec`.`user` (`user_id`, `user_nom`, `user_prenom`, `role_id`, `user_mail`, `user_adresse`, `user_tel`) VALUES 
-        (1, 'Dupont', 'Jean', 2, 'jean.dupont@ecole.com', '123 Rue des Professeurs', '0123456789'),
-        (2, 'Martin', 'Sophie', 3, 'sophie.martin@ecole.com', '456 Avenue des Étudiants', '0987654321'),
-        (3, 'Durand', 'Paul', 3, 'paul.durand@ecole.com', '789 Boulevard des Lycéens', '0678912345');
-
-    INSERT INTO `newgnotesec`.`matiere` (`mat_id`, `mat_libelle`) VALUES 
-        (1, 'Mathématiques'),
-        (2, 'Physique-Chimie'),
-        (3, 'Histoire-Géographie');
-
-    INSERT INTO `newgnotsec`.`note_type` (`note_type_id`, `note_type_libelle`) VALUES 
-        (1, 'Contrôle'),
-        (2, 'Examen final'),
-        (3, 'Devoir maison');
-
-    INSERT INTO `newgnotesec`.`note` (`user_id_enseignant`, `user_id_eleve`, `mat_id`, `note_coef`, `note_data`, `note_type_id`, `note_commentaire`, `note_date`) VALUES 
-        (1, 2, 1, 2.00, 15.00, 1, 'Bon travail', '2024-02-01'),
-        (1, 3, 2, 1.50, 12.50, 2, 'Peut mieux faire', '2024-02-10');
-
-    INSERT INTO `newgnotesec`.`matiere_association` (`user_id`, `mat_id`) VALUES 
-        (1, 1),  -- Prof enseigne les maths
-        (1, 2);  -- Prof enseigne la physique-chimie
-
-    -- Fin de procédure
-END$$
-
-DELIMITER ;
-
 -- --------------------------------------------------------
 
 --
@@ -86,17 +32,23 @@ CREATE TABLE IF NOT EXISTS `matiere` (
   `mat_id` int NOT NULL AUTO_INCREMENT,
   `mat_libelle` varchar(255) DEFAULT NULL,
   PRIMARY KEY (`mat_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb3;
+) ENGINE=InnoDB AUTO_INCREMENT=27 DEFAULT CHARSET=utf8mb3;
 
 --
 -- Déchargement des données de la table `matiere`
 --
 
 INSERT INTO `matiere` (`mat_id`, `mat_libelle`) VALUES
-(1, 'Mathématiques'),
-(2, 'Physique-Chimie'),
-(3, 'Histoire-Géographie'),
-(4, 'CyberSec');
+(17, 'Mathématiques'),
+(18, 'Physique'),
+(19, 'Informatique'),
+(20, 'Anglais'),
+(21, 'Cybersécurité'),
+(22, 'Électronique'),
+(23, 'Algorithmique'),
+(24, 'Réseaux'),
+(25, 'Développement Web'),
+(26, 'Systèmes d’exploitation');
 
 -- --------------------------------------------------------
 
@@ -111,13 +63,6 @@ CREATE TABLE IF NOT EXISTS `matiere_association` (
   PRIMARY KEY (`mat_id`,`user_id`),
   KEY `FKprybq444hholl3nnhvjj19tu9` (`user_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
---
--- Déchargement des données de la table `matiere_association`
---
-
-INSERT INTO `matiere_association` (`mat_id`, `user_id`) VALUES
-(1, 2);
 
 -- --------------------------------------------------------
 
@@ -141,14 +86,18 @@ CREATE TABLE IF NOT EXISTS `note` (
   KEY `FK_user_id_eleve_idx` (`user_id_eleve`),
   KEY `FK_user_mat_id_idx` (`mat_id`),
   KEY `FK_note_note_type_id_idx` (`note_type_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb3;
+) ENGINE=InnoDB AUTO_INCREMENT=32 DEFAULT CHARSET=utf8mb3;
 
 --
 -- Déchargement des données de la table `note`
 --
 
 INSERT INTO `note` (`id`, `user_id_enseignant`, `user_id_eleve`, `mat_id`, `note_coef`, `note_data`, `note_type_id`, `note_commentaire`, `note_date`) VALUES
-(3, 1, 2, 3, '2.00', '15.50', 1, 'Très bon travail', '2024-03-17');
+(27, 17, 35, 18, '4.00', '14.00', 2, 'Travail propre et bien structuré, les concepts sont maîtrisés.', '2025-05-17'),
+(28, 18, 38, 23, '1.00', '15.00', 1, 'Projet fonctionnel et bien présenté, l’architecture du code est claire.', '2025-05-22'),
+(29, 21, 41, 24, '2.00', '13.00', 1, 'Bonne maîtrise du sujet, les résultats sont cohérents et bien interprétés.', '2025-05-06'),
+(30, 17, 42, 18, '1.00', '16.00', 1, 'Travail propre et bien structuré', '2025-04-28'),
+(31, 21, 43, 24, '3.00', '8.00', 3, 'insuffisant ', '2025-05-08');
 
 -- --------------------------------------------------------
 
@@ -191,8 +140,8 @@ CREATE TABLE IF NOT EXISTS `role` (
 
 INSERT INTO `role` (`role_id`, `role_libelle`) VALUES
 (1, 'ADMIN'),
-(2, 'Enseignant'),
-(3, 'Élève');
+(2, 'ENSEIGNANT'),
+(3, 'ETUDIANT');
 
 -- --------------------------------------------------------
 
@@ -212,17 +161,35 @@ CREATE TABLE IF NOT EXISTS `user` (
   `user_tel` varchar(255) DEFAULT NULL,
   PRIMARY KEY (`user_id`),
   KEY `FK_role_role_id_idx` (`role_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb3;
+) ENGINE=InnoDB AUTO_INCREMENT=45 DEFAULT CHARSET=utf8mb3;
 
 --
 -- Déchargement des données de la table `user`
 --
 
 INSERT INTO `user` (`user_id`, `user_nom`, `user_prenom`, `role_id`, `user_mail`, `password`, `user_adresse`, `user_tel`) VALUES
-(1, 'Dupont', 'Jean', 2, 'jean.dupont@ecole.com', '', '123 Rue des Professeurs', '0123456789'),
-(2, 'Martin', 'Sophie', 3, 'sophie.martin@ecole.com', '', '456 Avenue des Étudiants', '0987654321'),
-(4, 'lebacle', 'valentin', 1, 'test@example.com', '$2a$12$uqsqeQyjVzwZ1m0RLEfGdeETLSAoFBzFgf0i7IjSauiSpmd8xCZOK', 'ici', '01250215'),
-(5, NULL, NULL, 1, 'valentin.lebacle@gmail.com', '$2a$12$VwOKPYhdlG5TlWhfcP.QR.eBK.aZDgfKOy0RBZr7jiGM2PAukv1EK', NULL, NULL);
+(1, 'Admin', 'Admin', 1, '1', '$2a$12$sa6xARurlsew6R6I4N0VKOz7mDK5ZBKQbCY7jVPxwPnINFgXcZtxm', '111 Terrasse des Admin', '1111111111'),
+(15, 'Lebacle', 'Valentin', 1, 'valentin.lebacle@ecole.fr', '$2a$12$sa6xARurlsew6R6I4N0VKOz7mDK5ZBKQbCY7jVPxwPnINFgXcZtxm', '456 Avenue des Étudiants', '0123456789'),
+(16, 'Durand', 'Claire', 2, 'claire.durand@ecole.fr', '$2a$12$sa6xARurlsew6R6I4N0VKOz7mDK5ZBKQbCY7jVPxwPnINFgXcZtxm', '123 Rue des Sciences', '0123456790'),
+(17, 'Martin', 'Jean', 2, 'jean.martin@ecole.fr', '$2a$12$sa6xARurlsew6R6I4N0VKOz7mDK5ZBKQbCY7jVPxwPnINFgXcZtxm', '89 Boulevard Universitaire', '0123456791'),
+(18, 'Nguyen', 'Linh', 2, 'linh.nguyen@ecole.fr', '$2a$12$sa6xARurlsew6R6I4N0VKOz7mDK5ZBKQbCY7jVPxwPnINFgXcZtxm', '12 Impasse des Connaissances', '0123456792'),
+(19, 'Moreau', 'Sophie', 2, 'sophie.moreau@ecole.fr', '$2a$12$sa6xARurlsew6R6I4N0VKOz7mDK5ZBKQbCY7jVPxwPnINFgXcZtxm', '5 Allée des Profs', '0123456793'),
+(20, 'Lemoine', 'Antoine', 2, 'antoine.lemoine@ecole.fr', '$2a$12$sa6xARurlsew6R6I4N0VKOz7mDK5ZBKQbCY7jVPxwPnINFgXcZtxm', '77 Route des Enseignants', '0123456794'),
+(21, 'Petit', 'Julie', 2, 'julie.petit@ecole.fr', '$2a$12$sa6xARurlsew6R6I4N0VKOz7mDK5ZBKQbCY7jVPxwPnINFgXcZtxm', '34 Cité Pédagogique', '0123456795'),
+(22, 'Roux', 'Thomas', 2, 'thomas.roux@ecole.fr', '$2a$12$sa6xARurlsew6R6I4N0VKOz7mDK5ZBKQbCY7jVPxwPnINFgXcZtxm', '98 Voie du Savoir', '0123456796'),
+(23, 'Garnier', 'Emilie', 2, 'emilie.garnier@ecole.fr', '$2a$12$sa6xARurlsew6R6I4N0VKOz7mDK5ZBKQbCY7jVPxwPnINFgXcZtxm', '101 Terrasse des Savoirs', '0123456797'),
+(33, 'admin', 'admin', 1, 'admin', '$2a$12$k1tMluHf3D8rZOiOS/XYh.zXRKPMj4kKgrkZ7SNqy1441yYcyp.4.', 'admin', '0000000000'),
+(34, 'prof', 'prof', 2, 'prof', '$2a$12$vmnH9rpZt3Vl4Vh9SlfnxeuICtexuwRI0amgRQCvYFBROAckve5.m', 'prof', '0000000000'),
+(35, 'Dubois', 'Lucas', 3, 'lucas.dubois@ecole.fr', '$2a$12$sa6xARurlsew6R6I4N0VKOz7mDK5ZBKQbCY7jVPxwPnINFgXcZtxm', '10 Rue des Élèves', '0612345001'),
+(36, 'Fontaine', 'Emma', 3, 'emma.fontaine@ecole.fr', '$2a$12$sa6xARurlsew6R6I4N0VKOz7mDK5ZBKQbCY7jVPxwPnINFgXcZtxm', '11 Rue des Études', '0612345002'),
+(37, 'Girard', 'Nathan', 3, 'nathan.girard@ecole.fr', '$2a$12$sa6xARurlsew6R6I4N0VKOz7mDK5ZBKQbCY7jVPxwPnINFgXcZtxm', '12 Rue de la Réussite', '0612345003'),
+(38, 'Lopez', 'Inès', 3, 'ines.lopez@ecole.fr', '$2a$12$sa6xARurlsew6R6I4N0VKOz7mDK5ZBKQbCY7jVPxwPnINFgXcZtxm', '13 Avenue du Savoir', '0612345004'),
+(39, 'Henry', 'Mathis', 3, 'mathis.henry@ecole.fr', '$2a$12$sa6xARurlsew6R6I4N0VKOz7mDK5ZBKQbCY7jVPxwPnINFgXcZtxm', '14 Allée des Étudiants', '0612345005'),
+(40, 'Renaud', 'Chloé', 3, 'chloe.renaud@ecole.fr', '$2a$12$sa6xARurlsew6R6I4N0VKOz7mDK5ZBKQbCY7jVPxwPnINFgXcZtxm', '15 Passage de la Connaissance', '0612345006'),
+(41, 'Leclerc', 'Enzo', 3, 'enzo.leclerc@ecole.fr', '$2a$12$sa6xARurlsew6R6I4N0VKOz7mDK5ZBKQbCY7jVPxwPnINFgXcZtxm', '16 Cité des Apprentis', '0612345007'),
+(42, 'Benoit', 'Léa', 3, 'lea.benoit@ecole.fr', '$2a$12$sa6xARurlsew6R6I4N0VKOz7mDK5ZBKQbCY7jVPxwPnINFgXcZtxm', '17 Rue des Révisions', '0612345008'),
+(43, 'Marchand', 'Axel', 3, 'axel.marchand@ecole.fr', '$2a$12$sa6xARurlsew6R6I4N0VKOz7mDK5ZBKQbCY7jVPxwPnINFgXcZtxm', '18 Boulevard des Études', '0612345009'),
+(44, 'Collet', 'Manon', 3, 'manon.collet@ecole.fr', '$2a$12$sa6xARurlsew6R6I4N0VKOz7mDK5ZBKQbCY7jVPxwPnINFgXcZtxm', '19 Impasse des Réussites', '0612345010');
 
 --
 -- Contraintes pour les tables déchargées
