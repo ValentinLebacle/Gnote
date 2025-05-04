@@ -6,7 +6,7 @@ git checkout -b Gnote_3.6
 
 git add .
 
-git commit -m "JFX | Finalisation de la page Info User"
+git commit -m "JFX | Finalisation des tests unitaires"
 
 git push origin Gnote_3.6
 
